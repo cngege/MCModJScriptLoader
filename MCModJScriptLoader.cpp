@@ -5,6 +5,8 @@
 #include <Shlobj.h>
 #include <filesystem>
 
+#include <iostream>
+
 #include "imgui_kiero/kiero.h"
 #include "hook/HookImgui.h"
 
@@ -15,14 +17,15 @@ namespace fs = std::filesystem;
 
 static auto start(HMODULE hModule) -> void {
     const char* local = getenv("LOCALAPPDATA");//C:\Users\CNGEGE\AppData\Local\Packages\microsoft.minecraftuwp_8wekyb3d8bbwe\AC
-    std::string moduleDir = std::string(local) + "..\\RoamingState\\JSRunner";
-    if (!fs::exists(fs::path(moduleDir))) {
+    fs::path moduleDir = std::string(local) + "\\..\\RoamingState\\JSRunner";
+    if (!fs::exists(moduleDir) || !fs::is_directory(moduleDir)) {
         fs::create_directories(moduleDir);
     }
-    auto file_logger = spdlog::basic_logger_mt("basic_logger", moduleDir + "\\app.log");
+    auto file_logger = spdlog::basic_logger_mt("basic_logger", (moduleDir / "app.log").string());
     spdlog::set_default_logger(file_logger);
     spdlog::set_level(spdlog::level::info);
-    spdlog::info("debuger..");
+    spdlog::flush_on(spdlog::level::info);  // 日志保存等级
+    spdlog::info("完工撒花..");
 
     // 拿到要Hook的关键函数的指针
     //ptr = findSig("0F B6 ? 88 ? 0F B6 42 01 88 41 01 0F");
