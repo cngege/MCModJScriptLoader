@@ -1,22 +1,24 @@
 ﻿// MCModJScriptLoader.cpp: 定义应用程序的入口点。
 //
 #include <iostream>
+#include <fstream>
 #include <Shlobj.h>
 #include <filesystem>
 
 #include "imgui_kiero/kiero.h"
 #include "hook/HookImgui.h"
+
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
+namespace fs = std::filesystem;
+
 static auto start(HMODULE hModule) -> void {
-    const char* local = getenv("LOCALAPPDATA");
-    std::string moduleDir = std::string(local) + "\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\RoamingState\\JSRunner";
-    moduleDir = std::string(local) + "\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\RoamingState";
-    if (!std::filesystem::exists(moduleDir)) {
-        std::filesystem::create_directories(moduleDir);
+    const char* local = getenv("LOCALAPPDATA");//C:\Users\CNGEGE\AppData\Local\Packages\microsoft.minecraftuwp_8wekyb3d8bbwe\AC
+    std::string moduleDir = std::string(local) + "..\\RoamingState\\JSRunner";
+    if (!fs::exists(fs::path(moduleDir))) {
+        fs::create_directories(moduleDir);
     }
-    std::filesystem::create_directories(moduleDir);
     auto file_logger = spdlog::basic_logger_mt("basic_logger", moduleDir + "\\app.log");
     spdlog::set_default_logger(file_logger);
     spdlog::set_level(spdlog::level::info);

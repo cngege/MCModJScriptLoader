@@ -411,8 +411,8 @@ public:
 		oExecuteCommandListsD3D12 = (ExecuteCommandListsD3D12)kiero::bind2(54, &hookExecuteCommandListsD3D12);
 		oPresentD3D12 = (PresentD3D12)kiero::bind2(140, &hookPresentD3D12);
 
-		o_D12DrawInstanced = (D3D12DrawInstanced)kiero::bind2(84, &hkDrawInstancedD12);
-		o_D12DrawIndexedInstanced = (D3D12DrawIndexedInstanced)kiero::bind2(85, &hkDrawIndexedInstancedD12);
+		//o_D12DrawInstanced = (D3D12DrawInstanced)kiero::bind2(84, &hkDrawInstancedD12);
+		//o_D12DrawIndexedInstanced = (D3D12DrawIndexedInstanced)kiero::bind2(85, &hkDrawIndexedInstancedD12);
 	}
 
 	static void CloseImGui() {

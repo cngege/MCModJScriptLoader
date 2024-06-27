@@ -12,8 +12,13 @@ add_compile_options(/utf-8)
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
 # release 下生成pdb
+	MESSAGE(STATUS "PDB - 当前在 RELEASE 模式下 生成pdb文件")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi")
 	set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
+else()
+	MESSAGE(STATUS "PDB - 当前在 DEBUG 模式下 生成完整pdb文件")
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi")
+	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /Zi")
 endif()
 
 #project ("MCModJScriptLoader")
