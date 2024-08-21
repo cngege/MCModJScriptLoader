@@ -1,4 +1,6 @@
 ﻿//ImGui Shit
+#ifndef HOOK_HOOKIMGUI_H
+#define HOOK_HOOKIMGUI_H
 
 #include "spdlog/spdlog.h"
 
@@ -424,3 +426,5 @@ public:
 		ImGui::DestroyContext();
 	}
 };
+
+#endif //HOOK_HOOKIMGUI_H

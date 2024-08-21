@@ -552,11 +552,11 @@ static inline JS_BOOL JS_VALUE_IS_NAN(JSValue v)
         JSValue v;
         if (val == (int32_t)val)
         {
-            v = JS_NewInt32(ctx, val);
+            v = JS_NewInt32(ctx, static_cast<int32_t>(val));
         }
         else
         {
-            v = __JS_NewFloat64(ctx, val);
+            v = __JS_NewFloat64(ctx, static_cast<double>(val));
         }
         return v;
     }

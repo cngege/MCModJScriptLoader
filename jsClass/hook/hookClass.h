@@ -1,0 +1,45 @@
+﻿#pragma once
+
+#include "quickjs/quickjs.h"
+#include "LightHook/LightHook.h"
+
+
+enum NativeTypes;
+struct NativeUserData;
+
+class hookClass {
+public:
+	static void Reg(JSContext* ctx);
+	static void Dispose();
+	static char getTypeSignature(NativeTypes type);
+
+private:
+	static JSValue constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue hook(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue unhook(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue origin(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+
+public:
+	hookClass();
+	~hookClass();
+
+
+private:
+	const char* signature();
+	
+
+private:
+	//JSValue m_hookFun;
+	/**
+	 * @brief 调用约定
+	 */
+	//std::vector<NativeTypes> m_agreeOn;
+	HookInformation m_hookinfo{};
+	JSContext* m_ctx = nullptr;
+	NativeUserData* m_userData = nullptr;
+};
+
+
+
+
+// hook 和 unhook 的机制

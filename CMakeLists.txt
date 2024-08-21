@@ -30,6 +30,9 @@ add_library(MCModJScriptLoader SHARED)
 target_sources(MCModJScriptLoader PRIVATE MCModJScriptLoader.cpp)
 
 
+add_subdirectory(client)
+add_subdirectory(hook)
+add_subdirectory(jsClass)
 add_subdirectory(include)
 
 if(DEFINED GitHubActions)
@@ -134,7 +137,12 @@ include_directories(include/openssl)
 # 链接OpenSSL库  
 target_link_libraries(MCModJScriptLoader PRIVATE
 	${CMAKE_SOURCE_DIR}/lib/openssl/libssl.lib
-	${CMAKE_SOURCE_DIR}/lib/openssl/libcrypto.lib)
+	${CMAKE_SOURCE_DIR}/lib/openssl/libcrypto.lib
+	${CMAKE_SOURCE_DIR}/lib/quickjs/quickjs.lib
+	${CMAKE_SOURCE_DIR}/lib/dyncall/dyncall_s.lib
+	${CMAKE_SOURCE_DIR}/lib/dyncall/dyncallback_s.lib
+	${CMAKE_SOURCE_DIR}/lib/dyncall/dynload_s.lib
+)
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
