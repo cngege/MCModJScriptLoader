@@ -17,6 +17,8 @@
 #include <dwrite_1.h>
 #include "imgui_kiero/kiero.h"
 
+#include "imgui/appConsole.h"
+
 //#include "../Utils/Game.h"
 //#include "../Utils/Utils.h"
 //#include "../Modules/Modules/Debug.h"
@@ -27,11 +29,15 @@
 
 #include <io.h>
 
+
 #pragma warning (disable: 4244)
 //#pragma warning (disable: 4267)
 //#pragma warning (disable: 6216)
 //#pragma warning (disable: 6278)
 //#pragma warning (disable: 26495)
+
+
+
 
 auto GetDllMod(void) -> HMODULE {
 	MEMORY_BASIC_INFORMATION info;
@@ -151,7 +157,9 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 		ImGui::NewFrame();
 
 		//Render::Updata();
-		ImGui::ShowDemoWindow();
+		//ImGui::ShowDemoWindow();
+		bool show = true;
+		GetImguiConsole()->Draw("Logger Console:", &show);
 		//Game::GetModuleManager()->onImGUIRender();
 		{
 			/*
@@ -278,7 +286,9 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 		ImGui::NewFrame();
 
 		//Render::Updata();
-		ImGui::ShowDemoWindow();
+		//ImGui::ShowDemoWindow();
+		bool show = true;
+		GetImguiConsole()->Draw("Logger Console:", &show);
 		//Game::GetModuleManager()->onImGUIRender();
 		{
 			/*

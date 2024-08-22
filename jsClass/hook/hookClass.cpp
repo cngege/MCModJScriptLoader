@@ -61,6 +61,13 @@ namespace {
 static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* userdata);
 
 
+hookClass::hookClass() {}
+
+hookClass::~hookClass() {
+	delete m_userData;
+}
+
+
 void hookClass::Reg(JSContext* ctx) {
 	auto rt = JS_GetRuntime(ctx);
 	JS_NewClassID(&id);
@@ -102,7 +109,10 @@ void hookClass::Reg(JSContext* ctx) {
 	JS_FreeValue(ctx, global_obj);
 }
 
-void hookClass::Dispose() {}
+void hookClass::Dispose() {
+	spdlog::info("(kan jian wo jiu hui lai gia dai ma)hookClass::Dispose");
+
+}
 
 JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 
@@ -346,12 +356,6 @@ JSValue hookClass::origin(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 
 
 	return ret;
-}
-
-hookClass::hookClass() {}
-
-hookClass::~hookClass() {
-	delete m_userData;
 }
 
 static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* userdata) {

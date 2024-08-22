@@ -21,6 +21,7 @@
 #include "jsClass/spdlog/spdlogClass.h"
 #include "jsClass/mem/memClass.h"
 #include "jsClass/hook/hookClass.h"
+#include <spdlog/sinks/callback_sink.h>
 
 namespace fs = std::filesystem;
 
@@ -102,7 +103,35 @@ static auto start(HMODULE hModule) -> void {
 		fs::create_directories(scriptDir);
 	}
     auto file_logger = spdlog::basic_logger_mt("MCModJScriptLoader", (moduleDir / "app.log").string());
+
+	file_logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg) {
+		switch(msg.level) {
+		case spdlog::level::info:
+			GetImguiConsole()->AddLog("[info] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+			break;
+		case spdlog::level::warn:
+			GetImguiConsole()->AddLog("[warn] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+			break;
+		case spdlog::level::err:
+			GetImguiConsole()->AddLog("[error] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+			break;
+		case spdlog::level::debug:
+			GetImguiConsole()->AddLog("[debug] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+			break;
+		case spdlog::level::trace:
+			GetImguiConsole()->AddLog("[trace] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+			break;
+		case spdlog::level::critical:
+			GetImguiConsole()->AddLog("[critical] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+			break;
+		default:
+			break;
+		}
+		
+	}));
+
     spdlog::set_default_logger(file_logger);
+
     spdlog::set_level(spdlog::level::info);
     spdlog::flush_on(spdlog::level::info);  // 日志保存等级
     spdlog::info("日志部分完工撒花..");
@@ -197,6 +226,9 @@ static auto stop()->void {
 	// JS释放
 	//JS_FreeContext(ctx);
 	//JS_FreeRuntime(rt);
+
+	// spdlog shutdown
+	spdlog::shutdown();
 }
 
 // Dll入口函数

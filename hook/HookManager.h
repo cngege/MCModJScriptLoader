@@ -2,7 +2,7 @@
 #ifndef HOOK_HOOK_H
 #define HOOK_HOOK_H
 
-class Hook
+class HookManager
 {
 public:
 	static auto init()->void;
