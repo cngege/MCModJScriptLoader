@@ -2,15 +2,18 @@
 //
 #include <fstream>
 #include <iostream>
-//#include <Shlobj.h>
 #include <filesystem>
 
-#include "LightHook/LightHook.h"
+//#include "LightHook/LightHook.h"
+#include "hook/HookManager.h"
+
 #include "spdlog/sinks/basic_file_sink.h"
 #include "spdlog/spdlog.h"
+#include "spdlog/sinks/callback_sink.h"
 
 #include "imgui_kiero/kiero.h"
 #include "hook/HookImgui.h"
+#include "hook/HookManager.h"
 
 #include "client/mem/mem.h"
 //#include "imgui/imgui.h"
@@ -21,12 +24,12 @@
 #include "jsClass/spdlog/spdlogClass.h"
 #include "jsClass/mem/memClass.h"
 #include "jsClass/hook/hookClass.h"
-#include <spdlog/sinks/callback_sink.h>
+
 
 namespace fs = std::filesystem;
 
 using MouseUpdata = void(__fastcall*)(__int64, char, char, __int16, __int16, __int16, __int16, char);
-HookInformation mouseupdate_info;
+HookInstance* mouseupdate_info = nullptr;
 auto MouseUpdate(__int64 a1, char mousebutton, char isDown, __int16 mouseX, __int16 mouseY, __int16 relativeMovementX, __int16 relativeMovementY, char a8)->void {
 	//Game::MouseKeyDown[mousebutton] = isDown;
 	//Game::GetModuleManager()->onMouseUpdate(mousebutton, isDown, mouseX, mouseY, relativeMovementX, relativeMovementY);
@@ -67,7 +70,7 @@ auto MouseUpdate(__int64 a1, char mousebutton, char isDown, __int16 mouseX, __in
 		spdlog::error("MouseUpdate 异常: {}", ex.what());
 	}
 
-	auto mouseupdatecall = (MouseUpdata)mouseupdate_info.Trampoline;
+	auto mouseupdatecall = (MouseUpdata)mouseupdate_info->origin;
 	mouseupdatecall(a1, mousebutton, isDown, mouseX, mouseY, relativeMovementX, relativeMovementY, a8);
 }
 
@@ -136,29 +139,17 @@ static auto start(HMODULE hModule) -> void {
     spdlog::flush_on(spdlog::level::info);  // 日志保存等级
     spdlog::info("日志部分完工撒花..");
 	
-    // 拿到要Hook的关键函数的指针
-    //ptr = findSig("0F B6 ? 88 ? 0F B6 42 01 88 41 01 0F");
-    //_ASSERT(ptr);
-
-    // 拿到参数到 玩家行为控制系统的指针
-    //auto _offset = FindSignatureRelay(ptr, "0F 10 42", 32);
-    //_ASSERT(_offset);
-    //offset = (int)*reinterpret_cast<byte*>(_offset + 3);
-
-    // 创建&开启Hook
-
     // 开启IMGUI HOOK
     auto ptr = Mem::findSig("48 8B C4 48 89 58 ? 48 89 68 ? 48 89 70 ? 57 41 54 41 55 41 56 41 57 48 83 EC ? 44 0F");
 	if (ptr) {
-		mouseupdate_info = CreateHook((void*)ptr, (void*)&MouseUpdate);
-		EnableHook(&mouseupdate_info);
+		//mouseupdate_info = CreateHook((void*)ptr, (void*)&MouseUpdate);
+		//EnableHook(&mouseupdate_info);
+		mouseupdate_info = HookManager::addHook(ptr, (void*)&MouseUpdate);
+		HookManager::enableHook(*mouseupdate_info);
 	}
 	else {
 		spdlog::warn("Mouse Hook fail.");
 	}
-
-    //info = CreateHook((void*)ptr, (void*)&LockControlInputCallBack);
-    //status = EnableHook(&info);
     ImguiHooks::InitImgui();
 
 	//JS Runner
@@ -215,17 +206,15 @@ static auto start(HMODULE hModule) -> void {
 			JS_FreeValue(ctx, val);
 		}
 	}
-
-	//JS_FreeContext(ctx);
-	//JS_FreeRuntime(rt);
 }
 
 static auto stop()->void {
-	// TODO: 卸载Hook
+	//卸载Hook
+	HookManager::disableAllHook();
 
 	// JS释放
-	//JS_FreeContext(ctx);
-	//JS_FreeRuntime(rt);
+	JS_FreeContext(ctx);
+	JS_FreeRuntime(rt);
 
 	// spdlog shutdown
 	spdlog::shutdown();

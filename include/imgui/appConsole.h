@@ -113,6 +113,7 @@ struct ExampleAppConsole
                 ImVec4 color;
                 bool has_color = false;
                 if(strstr(item, "[error]")) { color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); has_color = true; }
+                if(strstr(item, "[warn]")) { color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f); has_color = true; }
                 else if(strncmp(item, "# ", 2) == 0) { color = ImVec4(1.0f, 0.8f, 0.6f, 1.0f); has_color = true; }
                 if(has_color)
                     ImGui::PushStyleColor(ImGuiCol_Text, color);
@@ -142,7 +143,7 @@ struct ExampleAppConsole
             Strtrim(s);
             if(s[0])
                 ExecCommand(s);
-            strcpy(s, "");
+            strcpy_s(InputBuf, "");
             reclaim_focus = true;
         }
 

@@ -4,10 +4,11 @@
 //#include "dyncall/dyncall.h"
 #include "dyncall/dyncall_callback.h"
 #include "spdlog/spdlog.h"
+#include "../hook/HookManager.h"
 
 struct NativeUserData
 {
-	HookInformation* hookinfo = nullptr;
+	HookInstance* hookinfo = nullptr;
 	/**
 	 * @brief 调用约定
 	 */
@@ -160,9 +161,10 @@ JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc,
 		self->m_userData->agreeOn.push_back((NativeTypes)value);
 	}
 
-
-	self->m_hookinfo = CreateHook((void*)ptr, (void*)dcbNewCallback(self->signature(), (DCCallbackHandler*)&JSNativecall, self->m_userData));
-	self->m_userData->hookinfo = &self->m_hookinfo;
+	auto sign = self->signature();
+	//self->m_hookinfo = CreateHook((void*)ptr, (void*)dcbNewCallback(self->signature(), (DCCallbackHandler*)&JSNativecall, self->m_userData));
+	self->m_hookinfo = HookManager::addHook(ptr, (void*)dcbNewCallback(sign.c_str(), (DCCallbackHandler*)&JSNativecall, self->m_userData));
+	self->m_userData->hookinfo = self->m_hookinfo;
 	
 	JSValue obj = JS_NewObjectClass(ctx, id);
 	JS_SetOpaque(obj, self);
@@ -171,13 +173,13 @@ JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc,
 
 JSValue hookClass::hook(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	hookClass* thi = (hookClass*)JS_GetOpaque(newTarget, id);
-	EnableHook(&thi->m_hookinfo);
+	HookManager::enableHook(*thi->m_hookinfo);
 	return JS_UNDEFINED;
 }
 
 JSValue hookClass::unhook(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	hookClass* thi = (hookClass*)JS_GetOpaque(newTarget, id);
-	DisableHook(&thi->m_hookinfo);
+	HookManager::disableHook(*thi->m_hookinfo);
 	return JS_UNDEFINED;
 }
 
@@ -185,7 +187,7 @@ JSValue hookClass::origin(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 	hookClass* thi = (hookClass*)JS_GetOpaque(newTarget, id);
 	JSValue ret{};
 	try {
-		auto ori = thi->m_hookinfo.Trampoline;
+		auto ori = thi->m_hookinfo->origin;
 		dcReset(thi->m_userData->vm);
 		for(int i = 1; i < thi->m_userData->agreeOn.size(); ++i) {
 			switch(thi->m_userData->agreeOn[i]) {
@@ -250,7 +252,11 @@ JSValue hookClass::origin(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 				if(JS_ToFloat64(ctx, &valuef, argv[i - 1]) < 0) {
 					throw std::runtime_error("origin(NativeTypes::Float)解析失败");
 				}
-				dcArgFloat(thi->m_userData->vm, valuef);
+				#undef max
+				if(valuef > std::numeric_limits<float>::max()) {
+					spdlog::warn("origin(NativeTypes::Float)解析时发现值大于float最大值：{}", valuef);
+				}
+				dcArgFloat(thi->m_userData->vm, static_cast<DCfloat>(valuef));
 			}
 			break;
 			case NativeTypes::Double:
@@ -421,7 +427,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		}
 
 		// 然后调用JS中的CALL
-		auto ret = JS_Call(userData->ctx, userData->hookFun, JS_GetGlobalObject(userData->ctx), paras.size(), paras.data());
+		auto ret = JS_Call(userData->ctx, userData->hookFun, JS_GetGlobalObject(userData->ctx), static_cast<int>(paras.size()), paras.data());
 		
 		{
 			//if(userData->agreeOn[0] == NativeTypes::Pointer) {
@@ -580,8 +586,8 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 	return hookClass::getTypeSignature(userData->agreeOn[0]);
 }
 
-const char* hookClass::signature() {
-	return "nullptr";
+const std::string hookClass::signature() {
+	return (std::to_string((uintptr_t)this->m_ctx) + std::to_string((uintptr_t)this));
 }
 
 

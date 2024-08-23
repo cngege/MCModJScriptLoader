@@ -1,11 +1,13 @@
 ﻿#pragma once
 
+#include <string>
 #include "quickjs/quickjs.h"
 #include "LightHook/LightHook.h"
 
 
 enum NativeTypes;
 struct NativeUserData;
+class HookInstance;
 
 class hookClass {
 public:
@@ -25,7 +27,7 @@ public:
 
 
 private:
-	const char* signature();
+	const std::string signature();
 	
 
 private:
@@ -34,7 +36,7 @@ private:
 	 * @brief 调用约定
 	 */
 	//std::vector<NativeTypes> m_agreeOn;
-	HookInformation m_hookinfo{};
+	HookInstance* m_hookinfo = nullptr;
 	JSContext* m_ctx = nullptr;
 	NativeUserData* m_userData = nullptr;
 };

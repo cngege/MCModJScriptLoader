@@ -252,7 +252,8 @@ static void PlatformFree(void* address, const unsigned long long size)
 	ExFreePool(address);
 #endif
 #else
-	VirtualFree(address, size, MEM_RELEASE);
+	//VirtualFree(address, size, MEM_RELEASE);
+	VirtualFree(address, 0, MEM_RELEASE);
 #endif
 #ifdef __linux__
 	munmap(address, size);

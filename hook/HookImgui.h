@@ -130,6 +130,7 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 		ID3D11Texture2D* pBackBuffer = nullptr;
 		ppSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&pBackBuffer);
 		ID3D11RenderTargetView* mainRenderTargetView;
+		if(pBackBuffer == nullptr) { goto out; }
 		d3d11Device->CreateRenderTargetView(pBackBuffer, NULL, &mainRenderTargetView);
 		pBackBuffer->Release();
 		ImGui_ImplWin32_Init(childwindow);
