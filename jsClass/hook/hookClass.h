@@ -11,7 +11,7 @@ class HookInstance;
 
 class hookClass {
 public:
-	static void Reg(JSContext* ctx);
+	static void Reg();
 	static void Dispose();
 	static char getTypeSignature(NativeTypes type);
 
@@ -19,7 +19,7 @@ private:
 	static JSValue constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue hook(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue unhook(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
-	static JSValue origin(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue originold(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 public:
 	hookClass();
@@ -37,8 +37,8 @@ private:
 	 */
 	//std::vector<NativeTypes> m_agreeOn;
 	HookInstance* m_hookinfo = nullptr;
-	JSContext* m_ctx = nullptr;
 	NativeUserData* m_userData = nullptr;
+	JSValue origin{};
 };
 
 

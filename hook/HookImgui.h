@@ -262,6 +262,14 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 
 			if (!initImGuiFont) {
 
+				std::string font_JNMYT("C:\\Users\\CNGEGE\\AppData\\Local\\Packages\\microsoft.minecraftuwp_8wekyb3d8bbwe\\RoamingState\\JSRunner\\Assets\\Fonts\\JNMYT.ttf");
+				if (_access(font_JNMYT.c_str(), 0 /*F_OK*/) != -1) {
+					io.Fonts->AddFontFromFileTTF(font_JNMYT.c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+				}
+				if (_access("C:\\Windows\\Fonts\\msyh.ttc", 0 /*F_OK*/) != -1) {
+					io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+				}
+
 				//std::string font_JNMYT = Utils::WStringToString(Logger::GetRoamingFolderPath()) + std::string("\\Mod\\Assets\\JNMYT.ttf");
 				//if (_access(font_JNMYT.c_str(), 0 /*F_OK*/) != -1) {
 				//	io.Fonts->AddFontFromFileTTF(font_JNMYT.c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());

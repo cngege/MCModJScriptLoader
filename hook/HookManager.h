@@ -13,7 +13,9 @@ public:
 	HookInstance(){};
 	HookInstance(uintptr_t ptr) : m_ptr(ptr) {};
 
-	uintptr_t ptr() const { return m_ptr; };
+	uintptr_t ptr() const;
+	bool hook();
+	bool unhook();
 };
 
 class HookManager

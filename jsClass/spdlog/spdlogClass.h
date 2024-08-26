@@ -5,7 +5,7 @@
 class spdlogClass {
 
 public:
-	static void Reg(JSContext* ctx);
+	static void Reg();
 	static void Dispose();
 
 private:

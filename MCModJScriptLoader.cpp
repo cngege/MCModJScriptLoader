@@ -1,10 +1,11 @@
 ﻿// MCModJScriptLoader.cpp: 定义应用程序的入口点。
 //
+
 #include <fstream>
 #include <iostream>
 #include <filesystem>
 
-//#include "LightHook/LightHook.h"
+
 #include "hook/HookManager.h"
 
 #include "spdlog/sinks/basic_file_sink.h"
@@ -13,17 +14,20 @@
 
 #include "imgui_kiero/kiero.h"
 #include "hook/HookImgui.h"
-#include "hook/HookManager.h"
 
 #include "client/mem/mem.h"
-//#include "imgui/imgui.h"
+
+#include "client/utils/assets_net.h"
+
 #include "imgui/imgui_uwp_wndProc.h"
 
 #include "quickjs/quickjs-libc.h"
 
+#include "jsClass/JSManager.h"
 #include "jsClass/spdlog/spdlogClass.h"
 #include "jsClass/mem/memClass.h"
 #include "jsClass/hook/hookClass.h"
+#include "jsClass/nativePoint/nativePointClass.h"
 
 
 namespace fs = std::filesystem;
@@ -94,6 +98,7 @@ static auto start(HMODULE hModule) -> void {
 	size_t localsize = 0;
 	_dupenv_s(&localAppData, &localsize, "LOCALAPPDATA");
     //const char* local = getenv("LOCALAPPDATA");//C:\Users\CNGEGE\AppData\Local\Packages\microsoft.minecraftuwp_8wekyb3d8bbwe\AC
+	// 中文字体：https://ghproxy.cc/https://github.com/cngege/MCModJScriptLoader/releases/download/0.0.1/JNMYT.ttf
     fs::path moduleDir = std::string(localAppData) + "\\..\\RoamingState\\JSRunner";
     if (!fs::exists(moduleDir) || !fs::is_directory(moduleDir)) {
         fs::create_directories(moduleDir);
@@ -105,8 +110,16 @@ static auto start(HMODULE hModule) -> void {
 	if (!fs::exists(scriptDir) || !fs::is_directory(scriptDir)) {
 		fs::create_directories(scriptDir);
 	}
-    auto file_logger = spdlog::basic_logger_mt("MCModJScriptLoader", (moduleDir / "app.log").string());
+	auto assetsDir = moduleDir / "Assets";
+	if(!fs::exists(assetsDir) || !fs::is_directory(assetsDir)) {
+		fs::create_directories(assetsDir);
+	}
+	auto fontsDir = assetsDir / "Fonts";
+	if(!fs::exists(fontsDir) || !fs::is_directory(fontsDir)) {
+		fs::create_directories(fontsDir);
+	}
 
+    auto file_logger = spdlog::basic_logger_mt("MCModJScriptLoader", (moduleDir / "app.log").string());
 	file_logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg) {
 		switch(msg.level) {
 		case spdlog::level::info:
@@ -130,7 +143,6 @@ static auto start(HMODULE hModule) -> void {
 		default:
 			break;
 		}
-		
 	}));
 
     spdlog::set_default_logger(file_logger);
@@ -139,13 +151,18 @@ static auto start(HMODULE hModule) -> void {
     spdlog::flush_on(spdlog::level::info);  // 日志保存等级
     spdlog::info("日志部分完工撒花..");
 	
+	// httplib 下载字体文件
+	http::downFont_JNMYT(fontsDir);
+	
+
     // 开启IMGUI HOOK
     auto ptr = Mem::findSig("48 8B C4 48 89 58 ? 48 89 68 ? 48 89 70 ? 57 41 54 41 55 41 56 41 57 48 83 EC ? 44 0F");
 	if (ptr) {
 		//mouseupdate_info = CreateHook((void*)ptr, (void*)&MouseUpdate);
 		//EnableHook(&mouseupdate_info);
 		mouseupdate_info = HookManager::addHook(ptr, (void*)&MouseUpdate);
-		HookManager::enableHook(*mouseupdate_info);
+		mouseupdate_info->hook();
+		//HookManager::enableHook(*mouseupdate_info);
 	}
 	else {
 		spdlog::warn("Mouse Hook fail.");
@@ -156,20 +173,22 @@ static auto start(HMODULE hModule) -> void {
 	rt = JS_NewRuntime();
 	ctx = JS_NewContext(rt);
 	js_std_init_handlers(rt);
+	JSManager::getInstance().setctx(ctx);
 
 	JS_SetModuleLoaderFunc(rt, nullptr, js_module_loader, nullptr);
 	js_init_module_std(ctx, "std");
 	js_init_module_os(ctx, "os");
 
-	spdlogClass::Reg(ctx);
-	memClass::Reg(ctx);
-	hookClass::Reg(ctx);
+	spdlogClass::Reg();
+	memClass::Reg();
+	hookClass::Reg();
+	nativePointClass::Reg();
 
 	for (const auto& entry : fs::directory_iterator(scriptDir)) {
 		if (entry.is_regular_file() && entry.path().extension() == ".js") {
 			std::ifstream jsfile(entry.path());
 			std::string content((std::istreambuf_iterator<char>(jsfile)), std::istreambuf_iterator<char>());
-			spdlog::info("JS Loader: {}", entry.path().string());
+			spdlog::info("JS Loader: {}", entry.path().filename().string());
 			JSValue val = JS_Eval(ctx, content.c_str(), content.size(), entry.path().filename().string().c_str(), JS_EVAL_TYPE_MODULE);
 			if(JS_IsException(val)) {
 				spdlog::error("JS Loader fail: {}", entry.path().string());

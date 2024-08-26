@@ -1,10 +1,10 @@
 ﻿#include "hookClass.h"
 
-//#include <functional>
-//#include "dyncall/dyncall.h"
 #include "dyncall/dyncall_callback.h"
 #include "spdlog/spdlog.h"
+#include "../JSManager.h"
 #include "../hook/HookManager.h"
+#include "../nativePoint/nativePointClass.h"
 
 struct NativeUserData
 {
@@ -13,7 +13,6 @@ struct NativeUserData
 	 * @brief 调用约定
 	 */
 	std::vector<NativeTypes> agreeOn{};
-	JSContext* ctx = nullptr;
 	JSValue hookFun{};
 	DCCallVM* vm = nullptr;
 	NativeUserData() {
@@ -23,29 +22,11 @@ struct NativeUserData
 	}
 	~NativeUserData() {
 		dcFree(vm);
-		JS_FreeValue(ctx, hookFun);
+		JS_FreeValue(JSManager::getInstance().getctx(), hookFun);
 	}
 };
 
 
-enum NativeTypes
-{
-	Void = 0,
-	Bool,
-	Char,
-	UnsignedChar,
-	Short,
-	UnsignedShort,
-	Int,
-	UnsignedInt,
-	Long,
-	UnsignedLong,
-	LongLong,
-	UnsignedLongLong,
-	Float,
-	Double,
-	Pointer
-};
 
 namespace {
 	static JSClassID id;
@@ -54,6 +35,7 @@ namespace {
 		.finalizer{[](JSRuntime* rt, JSValue val) {
 				auto hook = (hookClass*)JS_GetOpaque(val, id);
 				//delete hook;
+				// 经检测，释放会出问题
 			}
 		}
 	};
@@ -69,7 +51,8 @@ hookClass::~hookClass() {
 }
 
 
-void hookClass::Reg(JSContext* ctx) {
+void hookClass::Reg() {
+	JSContext* ctx = JSManager::getInstance().getctx();
 	auto rt = JS_GetRuntime(ctx);
 	JS_NewClassID(&id);
 	JS_NewClass(rt, id, &_hookClass);
@@ -77,8 +60,7 @@ void hookClass::Reg(JSContext* ctx) {
 	JSValue protoInstance = JS_NewObject(ctx);
 	JS_SetPropertyStr(ctx, protoInstance, "hook", JS_NewCFunction(ctx, hookClass::hook, "hook", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "unhook", JS_NewCFunction(ctx, hookClass::unhook, "unhook", 0));
-	//JS_SetPropertyStr(ctx, protoInstance, "origin", JS_NewCFunction(ctx, hookClass::origin, "origin", 0));
-	JS_SetPropertyStr(ctx, protoInstance, "origin", JS_NewCFunction(ctx, hookClass::origin, "origin", 0));
+	JS_SetPropertyStr(ctx, protoInstance, "originold", JS_NewCFunction(ctx, hookClass::originold, "originold", 0));
 
 	JSValue ctroInstance = JS_NewCFunction2(ctx, &hookClass::constructor, _hookClass.class_name, 0, JS_CFUNC_constructor, 0);
 	JS_SetConstructor(ctx, ctroInstance, protoInstance);
@@ -140,10 +122,9 @@ JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc,
 	}
 
 	auto self = new hookClass;
-	self->m_ctx = ctx;
 
 	self->m_userData = new NativeUserData();
-	self->m_userData->ctx = ctx;
+	self->m_userData->agreeOn.clear();
 	self->m_userData->hookFun = JS_DupValue(ctx, argv[0]);
 
 	JSValue lengthVal = JS_GetPropertyStr(ctx, argv[2], "length");
@@ -162,7 +143,6 @@ JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc,
 	}
 
 	auto sign = self->signature();
-	//self->m_hookinfo = CreateHook((void*)ptr, (void*)dcbNewCallback(self->signature(), (DCCallbackHandler*)&JSNativecall, self->m_userData));
 	self->m_hookinfo = HookManager::addHook(ptr, (void*)dcbNewCallback(sign.c_str(), (DCCallbackHandler*)&JSNativecall, self->m_userData));
 	self->m_userData->hookinfo = self->m_hookinfo;
 	
@@ -173,17 +153,18 @@ JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc,
 
 JSValue hookClass::hook(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	hookClass* thi = (hookClass*)JS_GetOpaque(newTarget, id);
-	HookManager::enableHook(*thi->m_hookinfo);
+	thi->m_hookinfo->hook();
+	JS_SetPropertyStr(ctx, newTarget, "origin", nativePointClass::newNativePoint((uintptr_t)thi->m_hookinfo->origin, thi->m_userData->agreeOn));
 	return JS_UNDEFINED;
 }
 
 JSValue hookClass::unhook(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	hookClass* thi = (hookClass*)JS_GetOpaque(newTarget, id);
-	HookManager::disableHook(*thi->m_hookinfo);
+	thi->m_hookinfo->unhook();
 	return JS_UNDEFINED;
 }
 
-JSValue hookClass::origin(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+JSValue hookClass::originold(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	hookClass* thi = (hookClass*)JS_GetOpaque(newTarget, id);
 	JSValue ret{};
 	try {
@@ -270,11 +251,8 @@ JSValue hookClass::origin(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 			break;
 			case NativeTypes::Pointer:
 			{
-				int64_t valuepoint = 0;
-				if(JS_ToInt64(ctx, &valuepoint, argv[i - 1]) < 0) {
-					throw std::runtime_error("origin(NativeTypes::Pointer)解析失败");
-				}
-				dcArgPointer(thi->m_userData->vm, (void*)valuepoint);
+				nativePointClass* thii = (nativePointClass*)JS_GetOpaque(argv[i - 1], nativePointClass::id);
+				dcArgPointer(thi->m_userData->vm, (thii == 0) ? 0 : (void*)(thii->get()));
 			}
 			break;
 			default:
@@ -283,7 +261,6 @@ JSValue hookClass::origin(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 		}
 
 		// 调用
-		
 		switch(thi->m_userData->agreeOn[0]) {
 		case NativeTypes::Bool:
 		{
@@ -341,7 +318,14 @@ JSValue hookClass::origin(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 		case NativeTypes::Pointer:
 		{
 			auto v = dcCallPointer(thi->m_userData->vm, ori);
-			ret = JS_NewInt64(ctx, (int64_t)v);
+			ret = nativePointClass::newNativePoint((uintptr_t)ori);
+			//ret = JS_NewInt64(ctx, (int64_t)v);
+		}
+		break;
+		case NativeTypes::Void:
+		{
+			dcCallVoid(thi->m_userData->vm, ori);
+			ret = JS_UNDEFINED;
 		}
 		break;
 		default:
@@ -366,95 +350,76 @@ JSValue hookClass::origin(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 
 static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* userdata) {
 	auto userData = (NativeUserData*)userdata;
-	{
-		//auto a1 = (uintptr_t)dcbArgULongLong(args);
-		//auto a2 = (uintptr_t)dcbArgULongLong(args);
+	JSContext* ctx = JSManager::getInstance().getctx();
 
-		//auto r = reinterpret_cast<void*(__fastcall*)(uintptr_t, uintptr_t)>(userData->hookinfo->Trampoline)(a1, a2);
-		//result->p = (void*)r;
-		//return 'p';
-	}
-	
 	try {
 		std::vector<JSValue> paras;
 		for(int i = 1; i < userData->agreeOn.size(); ++i) {
 			switch(userData->agreeOn[i]) {
 			case NativeTypes::Bool:
-				paras.emplace_back(JS_NewBool(userData->ctx, dcbArgBool(args)));
+				paras.emplace_back(JS_NewBool(ctx, dcbArgBool(args)));
 				break;
 			case NativeTypes::Char:
-				paras.emplace_back(JS_NewInt64(userData->ctx, dcbArgChar(args)));
+				paras.emplace_back(JS_NewInt64(ctx, dcbArgChar(args)));
 				break;
 			case NativeTypes::UnsignedChar:
-				paras.emplace_back(JS_NewInt64(userData->ctx, dcbArgUChar(args)));
+				paras.emplace_back(JS_NewInt64(ctx, dcbArgUChar(args)));
 				break;
 			case NativeTypes::Short:
-				paras.emplace_back(JS_NewInt64(userData->ctx, dcbArgShort(args)));
+				paras.emplace_back(JS_NewInt64(ctx, dcbArgShort(args)));
 				break;
 			case NativeTypes::UnsignedShort:
-				paras.emplace_back(JS_NewInt64(userData->ctx, dcbArgUShort(args)));
+				paras.emplace_back(JS_NewInt64(ctx, dcbArgUShort(args)));
 				break;
 			case NativeTypes::Int:
-				paras.emplace_back(JS_NewInt64(userData->ctx, dcbArgInt(args)));
+				paras.emplace_back(JS_NewInt64(ctx, dcbArgInt(args)));
 				break;
 			case NativeTypes::UnsignedInt:
-				paras.emplace_back(JS_NewInt64(userData->ctx, (int)dcbArgUInt(args)));
+				paras.emplace_back(JS_NewInt64(ctx, (int)dcbArgUInt(args)));
 				break;
 			case NativeTypes::Long:
-				paras.emplace_back(JS_NewInt64(userData->ctx, (int)dcbArgLong(args)));
+				paras.emplace_back(JS_NewInt64(ctx, (int)dcbArgLong(args)));
 				break;
 			case NativeTypes::UnsignedLong:
-				paras.emplace_back(JS_NewInt64(userData->ctx, (int)dcbArgULong(args)));
+				paras.emplace_back(JS_NewInt64(ctx, (int)dcbArgULong(args)));
 				break;
 			case NativeTypes::LongLong:
-				paras.emplace_back(JS_NewInt64(userData->ctx, dcbArgLongLong(args)));
+				paras.emplace_back(JS_NewInt64(ctx, dcbArgLongLong(args)));
 				break;
 			case NativeTypes::UnsignedLongLong:
-				paras.emplace_back(JS_NewInt64(userData->ctx, (long long)dcbArgULongLong(args)));
+				paras.emplace_back(JS_NewInt64(ctx, (long long)dcbArgULongLong(args)));
 				break;
 			case NativeTypes::Float:
-				paras.emplace_back(JS_NewFloat64(userData->ctx, dcbArgFloat(args)));
+				paras.emplace_back(JS_NewFloat64(ctx, dcbArgFloat(args)));
 				break;
 			case NativeTypes::Double:
-				paras.emplace_back(JS_NewFloat64(userData->ctx, dcbArgDouble(args)));
+				paras.emplace_back(JS_NewFloat64(ctx, dcbArgDouble(args)));
 				break;
 			case NativeTypes::Pointer:
-				paras.emplace_back(JS_NewInt64(userData->ctx, (uintptr_t)dcbArgPointer(args)));
+			{
+				uintptr_t point = (uintptr_t)dcbArgPointer(args);
+				//paras.emplace_back(nativePointClass::newNativePoint((uintptr_t)dcbArgPointer(args)));
+				paras.emplace_back(nativePointClass::newNativePoint(point));
+			}
 				break;
 			default:
 				break;
 			}
 		}
-
-		// 然后调用JS中的CALL
-		auto ret = JS_Call(userData->ctx, userData->hookFun, JS_GetGlobalObject(userData->ctx), static_cast<int>(paras.size()), paras.data());
 		
-		{
-			//if(userData->agreeOn[0] == NativeTypes::Pointer) {
-			//	int64_t valuep = 0;
-			//	
-			//	if(JS_ToInt64(userData->ctx, &valuep, ret) < 0) {
-			//		spdlog::error("返回值(NativeTypes::Pointer)解析失败");
-			//		throw "返回值(NativeTypes::Pointer)解析失败";
-			//	}
-			//	spdlog::info("ces1");
-			//	result->p = (void*)valuep;
-			//	return 'p';
-			//}
-
-			//result->p = (void*)0;
-			//return 'p';
-		}
+		// 然后调用JS中的CALL
+		auto ret = JS_Call(ctx, userData->hookFun, JS_GetGlobalObject(ctx), static_cast<int>(paras.size()), paras.data());
+		
 
 		// 然后返回值类型去解析返回值，将返回值写入到 result 返回
 		switch(userData->agreeOn[0]) {
 		case NativeTypes::Bool:
-			result->c = JS_ToBool(userData->ctx, ret);
+			result->c = JS_ToBool(ctx, ret);
 			break;
 		case NativeTypes::Char:
 		{
 			int32_t value = 0;
-			if(JS_ToInt32(userData->ctx, &value, ret) < 0) {
+			if(JS_ToInt32(ctx, &value, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::Char)解析失败");
 			}
 			result->c = (char)value;
@@ -463,7 +428,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::UnsignedChar:
 		{
 			int32_t value = 0;
-			if(JS_ToInt32(userData->ctx, &value, ret) < 0) {
+			if(JS_ToInt32(ctx, &value, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::UnsignedChar)解析失败");
 			}
 			result->C = (unsigned char)value;
@@ -472,7 +437,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::Short:
 		{
 			int32_t value = 0;
-			if(JS_ToInt32(userData->ctx, &value, ret) < 0) {
+			if(JS_ToInt32(ctx, &value, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::Short)解析失败");
 			}
 			result->s = (short)value;
@@ -481,7 +446,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::UnsignedShort:
 		{
 			int32_t value = 0;
-			if(JS_ToInt32(userData->ctx, &value, ret) < 0) {
+			if(JS_ToInt32(ctx, &value, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::UnsignedShort)解析失败");
 			}
 			result->S = (unsigned)value;
@@ -490,7 +455,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::Int:
 		{
 			int32_t value = 0;
-			if(JS_ToInt32(userData->ctx, &value, ret) < 0) {
+			if(JS_ToInt32(ctx, &value, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::Int)解析失败");
 			}
 			result->i = (int)value;
@@ -499,7 +464,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::UnsignedInt:
 		{
 			int32_t value = 0;
-			if(JS_ToInt32(userData->ctx, &value, ret) < 0) {
+			if(JS_ToInt32(ctx, &value, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::UnsignedInt)解析失败");
 			}
 			result->I = (int)value;
@@ -508,7 +473,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::Long:
 		{
 			int32_t value = 0;
-			if(JS_ToInt32(userData->ctx, &value, ret) < 0) {
+			if(JS_ToInt32(ctx, &value, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::Long)解析失败");
 			}
 			result->j = (long)value;
@@ -517,7 +482,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::UnsignedLong:
 		{
 			int32_t value = 0;
-			if(JS_ToInt32(userData->ctx, &value, ret) < 0) {
+			if(JS_ToInt32(ctx, &value, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::UnsignedLong)解析失败");
 			}
 			result->J = (unsigned long)value;
@@ -526,7 +491,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::LongLong:
 		{
 			int64_t value64 = 0;
-			if(JS_ToInt64(userData->ctx, &value64, ret) < 0) {
+			if(JS_ToInt64(ctx, &value64, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::LongLong)解析失败");
 			}
 			result->l = (long long)value64;
@@ -535,7 +500,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::UnsignedLongLong:
 		{
 			int64_t value64 = 0;
-			if(JS_ToInt64(userData->ctx, &value64, ret) < 0) {
+			if(JS_ToInt64(ctx, &value64, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::UnsignedLongLong)解析失败");
 			}
 			result->L = (unsigned long long)value64;
@@ -544,7 +509,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::Float:
 		{
 			double valuef = 0;
-			if(JS_ToFloat64(userData->ctx, &valuef, ret) < 0) {
+			if(JS_ToFloat64(ctx, &valuef, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::Float)解析失败");
 			}
 			result->f = (float)valuef;
@@ -553,7 +518,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::Double:
 		{
 			double valued = 0;
-			if(JS_ToFloat64(userData->ctx, &valued, ret) < 0) {
+			if(JS_ToFloat64(ctx, &valued, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::Double)解析失败");
 			}
 			result->d = (double)valued;
@@ -562,15 +527,16 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		case NativeTypes::Pointer:
 		{
 			int64_t valuep = 0;
-			if(JS_ToInt64(userData->ctx, &valuep, ret) < 0) {
+			if(JS_ToInt64(ctx, &valuep, ret) < 0) {
 				throw std::runtime_error("返回值(NativeTypes::Pointer)解析失败");
 			}
-			result->p = (void*)valuep;
+			result->p = (JS_IsNull(ret) || JS_IsUndefined(ret) || valuep == 0)? 0 : (void*)((nativePointClass*)valuep)->get();
 		}
 		break;
 		default:
 			break;
 		}
+		JS_FreeValue(ctx, ret);
 	}
 	catch(std::runtime_error& re) {
 		spdlog::error(re.what());
@@ -587,7 +553,8 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 }
 
 const std::string hookClass::signature() {
-	return (std::to_string((uintptr_t)this->m_ctx) + std::to_string((uintptr_t)this));
+	//return "nullptr";
+	return std::to_string((uintptr_t)this);
 }
 
 

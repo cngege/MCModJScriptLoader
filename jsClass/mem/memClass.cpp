@@ -1,7 +1,7 @@
 ﻿#include "memClass.h"
 #include "../../client/mem/mem.h"
+#include "../JSManager.h"
 #include <string>
-//#include <memory>
 
 namespace {
 	static JSClassID id;
@@ -15,7 +15,8 @@ namespace {
 	};
 }
 
-void memClass::Reg(JSContext* ctx) {
+void memClass::Reg() {
+	JSContext* ctx = JSManager::getInstance().getctx();
 	JSValue global_obj = JS_GetGlobalObject(ctx);
 	JSValue mem = JS_NewObject(ctx);
 	JS_SetPropertyStr(ctx, global_obj, "mem", mem);
@@ -25,23 +26,13 @@ void memClass::Reg(JSContext* ctx) {
 	JS_SetPropertyStr(ctx, mem, "findSigRelay",
 					  JS_NewCFunction(ctx, memClass::findSigRelay, "findSigRelay", 3));
 	JS_SetPropertyStr(ctx, mem, "setBool",
-					  JS_NewCFunction(ctx, memClass::setBoolValue, "setBool", 3));
+					  JS_NewCFunction(ctx, memClass::setBoolValue, "setBool", 2));
 	JS_SetPropertyStr(ctx, mem, "getBool",
-					  JS_NewCFunction(ctx, memClass::findSigRelay, "getBool", 3));
+					  JS_NewCFunction(ctx, memClass::getBoolValue, "getBool", 1));
 }
 
 void memClass::Dispose() {
 
-}
-
-template<class T>
-void memClass::setValue(uintptr_t ptr, T v) {
-	*(T*)ptr = v;
-}
-
-template<class T>
-T memClass::getValue(uintptr_t ptr) {
-	return *(T*)ptr;
 }
 
 
@@ -104,7 +95,7 @@ JSValue memClass::setBoolValue(JSContext* ctx, JSValueConst newTarget, int argc,
 	if(v < 0) {
 		return JS_ThrowTypeError(ctx, "参数二转为布尔值失败");
 	}
-	memClass::setValue<bool>(ptr, (bool)v);
+	Mem::setValue<bool>((uintptr_t)ptr, (bool)v);
 
 	return JS_UNINITIALIZED;
 }
@@ -120,5 +111,5 @@ JSValue memClass::getBoolValue(JSContext* ctx, JSValueConst newTarget, int argc,
 	if(ptr <= 0) {
 		return JS_ThrowTypeError(ctx, "参数一指针不能小于等于0");
 	}
-	return JS_NewBool(ctx, memClass::getValue<bool>(ptr));
+	return JS_NewBool(ctx, Mem::getValue<bool>((uintptr_t)ptr));
 }

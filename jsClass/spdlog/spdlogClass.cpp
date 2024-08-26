@@ -1,5 +1,6 @@
 ﻿#include "spdlogClass.h"
 #include "spdlog/spdlog.h"
+#include "../JSManager.h"
 
 
 namespace {
@@ -16,7 +17,8 @@ namespace {
 
 
 
-void spdlogClass::Reg(JSContext* ctx) {
+void spdlogClass::Reg() {
+	JSContext* ctx = JSManager::getInstance().getctx();
 	auto rt = JS_GetRuntime(ctx);
 	JS_NewClassID(&id);
 	JS_NewClass(rt, id, &_spdlogClass);

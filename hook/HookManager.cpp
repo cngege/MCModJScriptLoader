@@ -62,3 +62,15 @@ auto HookManager::disableAllHook() -> void {
 }
 
 auto HookManager::uninit() -> void {}
+
+uintptr_t HookInstance::ptr() const {
+	return m_ptr;
+}
+
+bool HookInstance::hook() {
+	return HookManager::enableHook(*this);
+}
+
+bool HookInstance::unhook() {
+	return HookManager::disableHook(*this);
+}

@@ -4,15 +4,8 @@
 
 class memClass {
 public:
-	static void Reg(JSContext* ctx);
+	static void Reg();
 	static void Dispose();
-
-	template <class T>
-	static void setValue(uintptr_t, T);
-
-	template <class T>
-	static T getValue(uintptr_t);
-
 private:
 	static JSValue constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 

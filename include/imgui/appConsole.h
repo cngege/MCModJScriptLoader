@@ -1,4 +1,4 @@
-#ifndef HOOK_APPCONSOLE_H
+﻿#ifndef HOOK_APPCONSOLE_H
 #define HOOK_APPCONSOLE_H
 
 #include "imgui.h"
@@ -73,25 +73,20 @@ struct ExampleAppConsole
             ImGui::EndPopup();
         }
 
-        if(ImGui::SmallButton("Clear")) { ClearLog(); }
+        if(ImGui::SmallButton("清空")) { ClearLog(); }
         ImGui::SameLine();
-        bool copy_to_clipboard = ImGui::SmallButton("Copy");
+        bool copy_to_clipboard = ImGui::SmallButton("复制");
         //static float t = 0.0f; if (ImGui::GetTime() - t > 0.02f) { t = ImGui::GetTime(); AddLog("Spam %f", t); }
-
-        ImGui::Separator();
 
         // Options menu
         if(ImGui::BeginPopup("Options")) {
             ImGui::Checkbox("Auto-scroll", &AutoScroll);
             ImGui::EndPopup();
         }
-
-        // Options, Filter
-        if(ImGui::Button("Options"))
-            ImGui::OpenPopup("Options");
         ImGui::SameLine();
-        Filter.Draw("Filter (\"incl,-excl\") (\"error\")", 180);
-        ImGui::Separator();
+        // Options, Filter
+        if(ImGui::SmallButton("选项"))
+            ImGui::OpenPopup("Options");
 
         // Reserve enough left-over height for 1 separator + 1 input text
         const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
