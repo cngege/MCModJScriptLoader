@@ -16,7 +16,7 @@ namespace {
 }
 
 void memClass::Reg() {
-	JSContext* ctx = JSManager::getInstance().getctx();
+	JSContext* ctx = JSManager::getInstance()->getctx();
 	JSValue global_obj = JS_GetGlobalObject(ctx);
 	JSValue mem = JS_NewObject(ctx);
 	JS_SetPropertyStr(ctx, global_obj, "mem", mem);

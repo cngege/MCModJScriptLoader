@@ -1,8 +1,8 @@
 ﻿#include "JSManager.h"
 
-JSManager& JSManager::getInstance() {
+JSManager* JSManager::getInstance() {
 	static JSManager instance{};
-	return instance;
+	return &instance;
 }
 
 auto JSManager::setctx(JSContext* ctx) -> void {

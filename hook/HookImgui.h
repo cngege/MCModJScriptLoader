@@ -18,15 +18,7 @@
 #include "imgui_kiero/kiero.h"
 
 #include "imgui/appConsole.h"
-
-//#include "../Utils/Game.h"
-//#include "../Utils/Utils.h"
-//#include "../Modules/Modules/Debug.h"
-//#include "../Modules/Modules/RenderUI.h"
-//#include "../Modules/ModuleManager.h"
-
-//#include "../Render/Render.h"
-
+#include "../client/ModManager.h"
 #include <io.h>
 
 
@@ -139,17 +131,17 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 			ImGuiIO& io = ImGui::GetIO();
 			(void)io;
 
-			//std::string font_JNMYT = Utils::WStringToString(Logger::GetRoamingFolderPath()) + std::string("\\Mod\\Assets\\JNMYT.ttf");
-			//if (_access(font_JNMYT.c_str(), 0 /*F_OK*/) != -1) {
-			//	io.Fonts->AddFontFromFileTTF(font_JNMYT.c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-			//}
-			//if (_access("C:\\Windows\\Fonts\\msyh.ttc", 0) != -1) {
-			//	io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-			//}
-			//std::wstring mcfolderPath = Utils::getMCFolderPath();
-			//io.Fonts->AddFontFromFileTTF((Utils::WStringToString(mcfolderPath) + std::string("\\data\\fonts\\Mojangles.ttf")).c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+			fs::path font_JNMYT = ModManager::getInstance()->getPath("Assets\\Fonts\\JNMYT.ttf");
+			if(fs::exists(font_JNMYT)) {
+				io.Fonts->AddFontFromFileTTF(font_JNMYT.string().c_str(), 14.5f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+			}
+			if(_access("C:\\Windows\\Fonts\\msyh.ttc", 0 /*F_OK*/) != -1) {
+				io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+			}
+			io.Fonts->AddFontFromFileTTF((ModManager::getMCFolderPath() / "data\\fonts\\Mojangles.ttf").string().c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 			//// 这里注意值如果不是常亮就要当心其被释放掉
-			//io.IniFilename = Game::ImConfigIni.c_str();
+			static std::string imconfig = ModManager::getInstance()->getImConfigPath().string();
+			io.IniFilename = imconfig.c_str();
 
 			initContext = true;
 		}
@@ -262,28 +254,20 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 
 			if (!initImGuiFont) {
 
-				std::string font_JNMYT("C:\\Users\\CNGEGE\\AppData\\Local\\Packages\\microsoft.minecraftuwp_8wekyb3d8bbwe\\RoamingState\\JSRunner\\Assets\\Fonts\\JNMYT.ttf");
-				if (_access(font_JNMYT.c_str(), 0 /*F_OK*/) != -1) {
-					io.Fonts->AddFontFromFileTTF(font_JNMYT.c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+				fs::path font_JNMYT = ModManager::getInstance()->getPath("Assets\\Fonts\\JNMYT.ttf");
+				if(fs::exists(font_JNMYT)) {
+					io.Fonts->AddFontFromFileTTF(font_JNMYT.string().c_str(), 14.5f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 				}
 				if (_access("C:\\Windows\\Fonts\\msyh.ttc", 0 /*F_OK*/) != -1) {
 					io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 				}
-
-				//std::string font_JNMYT = Utils::WStringToString(Logger::GetRoamingFolderPath()) + std::string("\\Mod\\Assets\\JNMYT.ttf");
-				//if (_access(font_JNMYT.c_str(), 0 /*F_OK*/) != -1) {
-				//	io.Fonts->AddFontFromFileTTF(font_JNMYT.c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-				//}
-				//if (_access("C:\\Windows\\Fonts\\msyh.ttc", 0 /*F_OK*/) != -1) {
-				//	io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
-				//}
-				//std::wstring mcfolderPath = Utils::getMCFolderPath();
-				//io.Fonts->AddFontFromFileTTF((Utils::WStringToString(mcfolderPath) + std::string("\\data\\fonts\\Mojangles.ttf")).c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+				io.Fonts->AddFontFromFileTTF((ModManager::getMCFolderPath() / "data\\fonts\\Mojangles.ttf").string().c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 				initImGuiFont = true;
 			}
 
 			// 这里注意值如果不是常亮就要当心其被释放掉
-			//io.IniFilename = Game::ImConfigIni.c_str();
+			static std::string imconfig = ModManager::getInstance()->getImConfigPath().string();
+			io.IniFilename = imconfig.c_str();
 
 			d3d12Device->Release();
 

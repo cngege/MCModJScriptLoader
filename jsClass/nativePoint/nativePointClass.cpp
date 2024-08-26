@@ -19,7 +19,7 @@ namespace {
 JSClassID nativePointClass::id{};
 
 void nativePointClass::Reg() {
-	JSContext* ctx = JSManager::getInstance().getctx();
+	JSContext* ctx = JSManager::getInstance()->getctx();
 	auto rt = JS_GetRuntime(ctx);
 	JS_NewClassID(&nativePointClass::id);
 	JS_NewClass(rt, nativePointClass::id, &_nativePointClass);
@@ -56,7 +56,7 @@ void nativePointClass::Reg() {
 void nativePointClass::Dispose() {}
 
 JSValue nativePointClass::FromPtr(uintptr_t ptr) {
-	JSValue obj = JS_NewObjectClass(JSManager::getInstance().getctx(), id);
+	JSValue obj = JS_NewObjectClass(JSManager::getInstance()->getctx(), id);
 	JS_SetOpaque(obj, (void*)ptr);
 	return obj;
 }

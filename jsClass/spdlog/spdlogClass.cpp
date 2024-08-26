@@ -18,7 +18,7 @@ namespace {
 
 
 void spdlogClass::Reg() {
-	JSContext* ctx = JSManager::getInstance().getctx();
+	JSContext* ctx = JSManager::getInstance()->getctx();
 	auto rt = JS_GetRuntime(ctx);
 	JS_NewClassID(&id);
 	JS_NewClass(rt, id, &_spdlogClass);

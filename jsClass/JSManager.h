@@ -2,7 +2,7 @@
 
 class JSManager {
 public:
-	static JSManager& getInstance();
+	static JSManager* getInstance();
 
 public:
 	auto setctx(JSContext* ctx) -> void;

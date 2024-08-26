@@ -22,7 +22,7 @@ struct NativeUserData
 	}
 	~NativeUserData() {
 		dcFree(vm);
-		JS_FreeValue(JSManager::getInstance().getctx(), hookFun);
+		JS_FreeValue(JSManager::getInstance()->getctx(), hookFun);
 	}
 };
 
@@ -52,7 +52,7 @@ hookClass::~hookClass() {
 
 
 void hookClass::Reg() {
-	JSContext* ctx = JSManager::getInstance().getctx();
+	JSContext* ctx = JSManager::getInstance()->getctx();
 	auto rt = JS_GetRuntime(ctx);
 	JS_NewClassID(&id);
 	JS_NewClass(rt, id, &_hookClass);
@@ -60,7 +60,6 @@ void hookClass::Reg() {
 	JSValue protoInstance = JS_NewObject(ctx);
 	JS_SetPropertyStr(ctx, protoInstance, "hook", JS_NewCFunction(ctx, hookClass::hook, "hook", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "unhook", JS_NewCFunction(ctx, hookClass::unhook, "unhook", 0));
-	JS_SetPropertyStr(ctx, protoInstance, "originold", JS_NewCFunction(ctx, hookClass::originold, "originold", 0));
 
 	JSValue ctroInstance = JS_NewCFunction2(ctx, &hookClass::constructor, _hookClass.class_name, 0, JS_CFUNC_constructor, 0);
 	JS_SetConstructor(ctx, ctroInstance, protoInstance);
@@ -164,193 +163,9 @@ JSValue hookClass::unhook(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 	return JS_UNDEFINED;
 }
 
-JSValue hookClass::originold(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
-	hookClass* thi = (hookClass*)JS_GetOpaque(newTarget, id);
-	JSValue ret{};
-	try {
-		auto ori = thi->m_hookinfo->origin;
-		dcReset(thi->m_userData->vm);
-		for(int i = 1; i < thi->m_userData->agreeOn.size(); ++i) {
-			switch(thi->m_userData->agreeOn[i]) {
-			case NativeTypes::Bool:
-			{
-				dcArgBool(thi->m_userData->vm, JS_ToBool(ctx, argv[i - 1]));
-			}
-			break;
-			case NativeTypes::Char:
-			case NativeTypes::UnsignedChar:
-			{
-				int32_t value = 0;
-				if(JS_ToInt32(ctx, &value, argv[i - 1]) < 0) {
-					throw std::runtime_error("origin(NativeTypes::UnsignedChar(Char))解析失败");
-				}
-				dcArgChar(thi->m_userData->vm, value);
-			}
-			break;
-			case NativeTypes::Short:
-			case NativeTypes::UnsignedShort:
-			{
-				int32_t value = 0;
-				if(JS_ToInt32(ctx, &value, argv[i - 1]) < 0) {
-					throw std::runtime_error("origin(NativeTypes::UnsignedShort(Short))解析失败");
-				}
-				dcArgShort(thi->m_userData->vm, value);
-			}
-			break;
-			case NativeTypes::Int:
-			case NativeTypes::UnsignedInt:
-			{
-				int32_t value = 0;
-				if(JS_ToInt32(ctx, &value, argv[i - 1]) < 0) {
-					throw std::runtime_error("origin(NativeTypes::UnsignedInt(Int))解析失败");
-				}
-				dcArgInt(thi->m_userData->vm, value);
-			}
-			break;
-			case NativeTypes::Long:
-			case NativeTypes::UnsignedLong:
-			{
-				int32_t value = 0;
-				if(JS_ToInt32(ctx, &value, argv[i - 1]) < 0) {
-					throw std::runtime_error("origin(NativeTypes::UnsignedLong(Long))解析失败");
-				}
-				dcArgLong(thi->m_userData->vm, value);
-			}
-			break;
-			case NativeTypes::LongLong:
-			case NativeTypes::UnsignedLongLong:
-			{
-				int64_t value64 = 0;
-				if(JS_ToInt64(ctx, &value64, argv[i - 1]) < 0) {
-					throw std::runtime_error("origin(NativeTypes::UnsignedLongLong(LongLong))解析失败");
-				}
-				dcArgLongLong(thi->m_userData->vm, value64);
-			}
-			break;
-			case NativeTypes::Float:
-			{
-				double valuef = 0;
-				if(JS_ToFloat64(ctx, &valuef, argv[i - 1]) < 0) {
-					throw std::runtime_error("origin(NativeTypes::Float)解析失败");
-				}
-				#undef max
-				if(valuef > std::numeric_limits<float>::max()) {
-					spdlog::warn("origin(NativeTypes::Float)解析时发现值大于float最大值：{}", valuef);
-				}
-				dcArgFloat(thi->m_userData->vm, static_cast<DCfloat>(valuef));
-			}
-			break;
-			case NativeTypes::Double:
-			{
-				double valued = 0;
-				if(JS_ToFloat64(ctx, &valued, argv[i - 1]) < 0) {
-					throw std::runtime_error("origin(NativeTypes::Double)解析失败");
-				}
-				dcArgDouble(thi->m_userData->vm, valued);
-			}
-			break;
-			case NativeTypes::Pointer:
-			{
-				nativePointClass* thii = (nativePointClass*)JS_GetOpaque(argv[i - 1], nativePointClass::id);
-				dcArgPointer(thi->m_userData->vm, (thii == 0) ? 0 : (void*)(thii->get()));
-			}
-			break;
-			default:
-				break;
-			}
-		}
-
-		// 调用
-		switch(thi->m_userData->agreeOn[0]) {
-		case NativeTypes::Bool:
-		{
-			auto v = dcCallBool(thi->m_userData->vm, ori);
-			ret = JS_NewBool(ctx, v);
-		}
-		break;
-		case NativeTypes::Char:
-		case NativeTypes::UnsignedChar:
-		{
-			auto v = dcCallChar(thi->m_userData->vm, ori);
-			ret = JS_NewInt32(ctx, v);
-		}
-		break;
-		case NativeTypes::Short:
-		case NativeTypes::UnsignedShort:
-		{
-			auto v = dcCallShort(thi->m_userData->vm, ori);
-			ret = JS_NewInt32(ctx, v);
-		}
-		break;
-		case NativeTypes::Int:
-		case NativeTypes::UnsignedInt:
-		{
-			auto v = dcCallInt(thi->m_userData->vm, ori);
-			ret = JS_NewInt32(ctx, v);
-		}
-		break;
-		case NativeTypes::Long:
-		case NativeTypes::UnsignedLong:
-		{
-			auto v = dcCallLong(thi->m_userData->vm, ori);
-			ret = JS_NewInt32(ctx, v);
-		}
-		break;
-		case NativeTypes::LongLong:
-		case NativeTypes::UnsignedLongLong:
-		{
-			auto v = dcCallLongLong(thi->m_userData->vm, ori);
-			ret = JS_NewInt64(ctx, v);
-		}
-		break;
-		case NativeTypes::Float:
-		{
-			auto v = dcCallFloat(thi->m_userData->vm, ori);
-			ret = JS_NewFloat64(ctx, v);
-		}
-		break;
-		case NativeTypes::Double:
-		{
-			auto v = dcCallDouble(thi->m_userData->vm, ori);
-			ret = JS_NewFloat64(ctx, v);
-		}
-		break;
-		case NativeTypes::Pointer:
-		{
-			auto v = dcCallPointer(thi->m_userData->vm, ori);
-			ret = nativePointClass::newNativePoint((uintptr_t)ori);
-			//ret = JS_NewInt64(ctx, (int64_t)v);
-		}
-		break;
-		case NativeTypes::Void:
-		{
-			dcCallVoid(thi->m_userData->vm, ori);
-			ret = JS_UNDEFINED;
-		}
-		break;
-		default:
-			break;
-		}
-		dcReset(thi->m_userData->vm);
-	}
-	catch(std::runtime_error& re) {
-		spdlog::error(re.what());
-		spdlog::error("错误发生在-函数：{}，文件：{}", __FUNCTION__, __FILE__);
-		throw re;
-	}
-	catch(std::exception& e) {
-		spdlog::error(e.what());
-		spdlog::error("错误发生在-函数：{}，文件：{}", __FUNCTION__, __FILE__);
-		throw e;
-	}
-
-
-	return ret;
-}
-
 static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* userdata) {
 	auto userData = (NativeUserData*)userdata;
-	JSContext* ctx = JSManager::getInstance().getctx();
+	JSContext* ctx = JSManager::getInstance()->getctx();
 
 	try {
 		std::vector<JSValue> paras;
