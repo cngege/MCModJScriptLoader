@@ -49,6 +49,7 @@ private:
 	static JSValue constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 	static JSValue offset(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue addvtf(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue setAgree(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue setbool(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue getbool(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
@@ -62,6 +63,8 @@ private:
 	static JSValue getdouble(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue setpoint(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue getpoint(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+
+	static JSValue getstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 
 	static JSValue call(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);

@@ -6,6 +6,12 @@
 #include "../hook/HookManager.h"
 #include "../nativePoint/nativePointClass.h"
 
+#include <unordered_map>
+
+static std::unordered_map<uintptr_t, std::pair<JSValue, JSValue>> hooktable{};
+
+static std::vector<hookClass*> thisdispose{};
+
 struct NativeUserData
 {
 	HookInstance* hookinfo = nullptr;
@@ -35,7 +41,7 @@ namespace {
 		.finalizer{[](JSRuntime* rt, JSValue val) {
 				auto hook = (hookClass*)JS_GetOpaque(val, id);
 				//delete hook;
-				// 经检测，释放会出问题
+				// 经检测，释放会出问题, 所以统一程序结束后 或者手动释放dll时释放
 			}
 		}
 	};
@@ -94,6 +100,10 @@ void hookClass::Reg() {
 void hookClass::Dispose() {
 	spdlog::info("(kan jian wo jiu hui lai gia dai ma)hookClass::Dispose");
 
+	for(auto& it : thisdispose) {
+		delete it;
+	}
+	thisdispose.clear();
 }
 
 JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
@@ -121,6 +131,7 @@ JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc,
 	}
 
 	auto self = new hookClass;
+	thisdispose.push_back(self);
 
 	self->m_userData = new NativeUserData();
 	self->m_userData->agreeOn.clear();

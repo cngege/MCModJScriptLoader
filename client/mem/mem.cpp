@@ -4,15 +4,22 @@
 #include <vector>
 #include <optional>
 #include <algorithm>	//std::search
+#include <unordered_map>
+#include <string>
 
 #define INRANGE(x,a,b) (x >= a && x <= b)
 #define GET_BYTE( x )  (GET_BITS(x[0]) << 4 | GET_BITS(x[1]))
 #define GET_BITS( x )  (INRANGE((x&(~0x20)),'A','F') ? ((x&(~0x20)) - 'A' + 0xa) : (INRANGE(x,'0','9') ? x - '0' : 0))
 
-
+static std::unordered_map<std::string, uintptr_t> signmap{};
 
 auto Mem::findSig(const char* signature, const char* modulename) -> uintptr_t
 {
+	auto sign_it = signmap.find(std::string(signature));
+	if(sign_it != signmap.end()) {
+		return sign_it->second;
+	}
+
 	static auto pattern_to_byte = [](const char* pattern) {
 
 		auto bytes = std::vector<std::optional<uint8_t>>{};
@@ -54,6 +61,7 @@ auto Mem::findSig(const char* signature, const char* modulename) -> uintptr_t
 	if (!ret)
 		return 0;
 
+	signmap[std::string(signature)] = ret;
 	return ret;
 }
 

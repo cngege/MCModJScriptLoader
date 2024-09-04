@@ -42,6 +42,7 @@ void nativePointClass::Reg() {
 	JS_SetPropertyStr(ctx, protoInstance, "getdouble", JS_NewCFunction(ctx, nativePointClass::getdouble, "getdouble", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "setpoint", JS_NewCFunction(ctx, nativePointClass::setpoint, "setpoint", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "getpoint", JS_NewCFunction(ctx, nativePointClass::getpoint, "getpoint", 0));
+	JS_SetPropertyStr(ctx, protoInstance, "getstring", JS_NewCFunction(ctx, nativePointClass::getstring, "getstring", 0));
 
 	JSValue ctroInstance = JS_NewCFunction2(ctx, &nativePointClass::constructor, _nativePointClass.class_name, 0, JS_CFUNC_constructor, 0);
 	JS_SetConstructor(ctx, ctroInstance, protoInstance);
@@ -120,9 +121,6 @@ JSValue nativePointClass::constructor(JSContext* ctx, JSValueConst newTarget, in
 			self->m_agreeOn.push_back((NativeTypes)value);
 		}
 	}
-
-	//JSValue obj = JS_NewObjectClass(ctx, id);
-	//JS_SetOpaque(obj, self);
 	return FromPtr((uintptr_t)self);
 }
 
@@ -139,13 +137,17 @@ JSValue nativePointClass::offset(JSContext* ctx, JSValueConst newTarget, int arg
 	return newNativePoint(thi->m_ptr + offset);
 }
 
+JSValue nativePointClass::addvtf(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+	return JSValue();
+}
+
 JSValue nativePointClass::setAgree(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	// 设置调用约定
 	if(argc < 1) {
 		return JS_ThrowTypeError(ctx, "函数需要1个参数，当前参数个数：%d", argc);
 	}
 	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
-	JSValue lengthVal = JS_GetPropertyStr(ctx, argv[1], "length");
+	JSValue lengthVal = JS_GetPropertyStr(ctx, argv[0], "length");
 	uint64_t len = 0;
 	int r = JS_ToIndex(ctx, &len, lengthVal);
 	JS_FreeValue(ctx, lengthVal);
@@ -154,17 +156,18 @@ JSValue nativePointClass::setAgree(JSContext* ctx, JSValueConst newTarget, int a
 	}
 	thi->m_agreeOn.clear();
 	for(int i = 0; i < len; i++) {
-		JSValue item = JS_GetPropertyUint32(ctx, argv[1], i);
+		JSValue item = JS_GetPropertyUint32(ctx, argv[0], i);
 		int32_t value = 0;
 		int r = JS_ToInt32(ctx, &value, item);
 		JS_FreeValue(ctx, item);
 		if(r < 0) {
-			return JS_ThrowTypeError(ctx, "参数二NativeTypes数组解析失败");
+			return JS_ThrowTypeError(ctx, "参数二NativeTypes数组解析失败 i: %d", i);
 		}
 		
 		thi->m_agreeOn.push_back((NativeTypes)value);
 	}
-	return newTarget;
+	return JS_DupValue(ctx, newTarget);
+	
 }
 
 JSValue nativePointClass::setbool(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
@@ -277,6 +280,12 @@ JSValue nativePointClass::getpoint(JSContext* ctx, JSValueConst newTarget, int a
 	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
 	auto ptr = Mem::getValue<uintptr_t>(thi->m_ptr);
 	return newNativePoint(ptr);
+}
+
+JSValue nativePointClass::getstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+	std::string& str = *(std::string*)thi->m_ptr;
+	return JS_NewString(ctx, str.c_str());
 }
 
 ////////////////////////////// CALL /////////////////////////////////

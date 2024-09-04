@@ -27,6 +27,7 @@ void spdlogClass::Reg() {
 	JS_SetPropertyStr(ctx, protoInstance, "info", JS_NewCFunction(ctx, spdlogClass::info, "info", 1));
 	JS_SetPropertyStr(ctx, protoInstance, "warn", JS_NewCFunction(ctx, spdlogClass::warn, "warn", 1));
 	JS_SetPropertyStr(ctx, protoInstance, "error", JS_NewCFunction(ctx, spdlogClass::error, "error", 1));
+	JS_SetPropertyStr(ctx, protoInstance, "debug", JS_NewCFunction(ctx, spdlogClass::debug, "debug", 1));
 
 	JSValue ctroInstance = JS_NewCFunction2(ctx, &spdlogClass::constructor, _spdlogClass.class_name, 0, JS_CFUNC_constructor, 0);
 	JS_SetConstructor(ctx, ctroInstance, protoInstance);
@@ -65,6 +66,13 @@ JSValue spdlogClass::warn(JSContext* ctx, JSValueConst thisVal, int argc, JSValu
 JSValue spdlogClass::error(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
 	auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[0]));
 	spdlog::error(str);
+	JS_FreeCString(ctx, str);
+	return JS_UNINITIALIZED;
+}
+
+JSValue spdlogClass::debug(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
+	auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[0]));
+	spdlog::debug(str);
 	JS_FreeCString(ctx, str);
 	return JS_UNINITIALIZED;
 }

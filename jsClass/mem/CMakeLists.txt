@@ -1,3 +1,3 @@
 target_sources(MCModJScriptLoader PRIVATE 
-	${CMAKE_CURRENT_SOURCE_DIR}/memClass.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/JsModule_mem.cpp
 )

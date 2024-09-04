@@ -1,49 +1,10 @@
-﻿#include "memClass.h"
-#include "../../client/mem/mem.h"
-#include "../JSManager.h"
+﻿#include "JsModule_mem.h"
 #include <string>
 
-namespace {
-	static JSClassID id;
-	static JSClassDef _memClass = {
-		.class_name{"mem"},
-		.finalizer{[](JSRuntime* rt, JSValue val) {
-				auto mem = (memClass*)JS_GetOpaque(val, id);
-				delete mem;
-			}
-		}
-	};
-}
+#include "../../client/mem/mem.h"
+#include "../JSManager.h"
 
-void memClass::Reg() {
-	JSContext* ctx = JSManager::getInstance()->getctx();
-	JSValue global_obj = JS_GetGlobalObject(ctx);
-	JSValue mem = JS_NewObject(ctx);
-	JS_SetPropertyStr(ctx, global_obj, "mem", mem);
-
-	JS_SetPropertyStr(ctx, mem, "findSig",
-					  JS_NewCFunction(ctx, memClass::findSig, "findSig", 1));
-	JS_SetPropertyStr(ctx, mem, "findSigRelay",
-					  JS_NewCFunction(ctx, memClass::findSigRelay, "findSigRelay", 3));
-	JS_SetPropertyStr(ctx, mem, "setBool",
-					  JS_NewCFunction(ctx, memClass::setBoolValue, "setBool", 2));
-	JS_SetPropertyStr(ctx, mem, "getBool",
-					  JS_NewCFunction(ctx, memClass::getBoolValue, "getBool", 1));
-}
-
-void memClass::Dispose() {
-
-}
-
-
-JSValue memClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
-	JSValue obj = JS_NewObjectClass(ctx, id);
-	auto self = new memClass;
-	JS_SetOpaque(obj, self);
-	return obj;
-}
-
-JSValue memClass::findSig(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+static JSValue js_findSig(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
 	std::string module = "Minecraft.Windows.exe";
 	std::string signCode = "";
 	if(argc >= 1) {
@@ -60,8 +21,7 @@ JSValue memClass::findSig(JSContext* ctx, JSValueConst newTarget, int argc, JSVa
 	return JS_ThrowTypeError(ctx, "函数最少需要1个参数，当前参数个数：%d", argc);
 }
 
-// 在地址后进行特征查找直到超出规定范围
-JSValue memClass::findSigRelay(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+static JSValue js_findSigRelay(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
 	if(argc < 3) {
 		return JS_ThrowTypeError(ctx, "函数最少需要3个参数，当前参数个数：%d", argc);
 	}
@@ -80,7 +40,7 @@ JSValue memClass::findSigRelay(JSContext* ctx, JSValueConst newTarget, int argc,
 	return JS_NewInt64(ctx, retptr);
 }
 
-JSValue memClass::setBoolValue(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+static JSValue js_setBoolValue(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
 	if(argc < 2) {
 		return JS_ThrowTypeError(ctx, "函数需要2个参数，当前参数个数：%d", argc);
 	}
@@ -100,7 +60,8 @@ JSValue memClass::setBoolValue(JSContext* ctx, JSValueConst newTarget, int argc,
 	return JS_UNINITIALIZED;
 }
 
-JSValue memClass::getBoolValue(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+
+static JSValue js_getBoolValue(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
 	if(argc < 1) {
 		return JS_ThrowTypeError(ctx, "函数需要1个参数，当前参数个数：%d", argc);
 	}
@@ -112,4 +73,24 @@ JSValue memClass::getBoolValue(JSContext* ctx, JSValueConst newTarget, int argc,
 		return JS_ThrowTypeError(ctx, "参数一指针不能小于等于0");
 	}
 	return JS_NewBool(ctx, Mem::getValue<bool>((uintptr_t)ptr));
+}
+
+static const JSCFunctionListEntry js_mem_funcs[] = {
+    //JS_CFUNC_DEF("Get", 1, js_http_get_request),
+	 { "findSig", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_findSig } } } },
+	 { "findSigRelay", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_findSigRelay } } } },
+	 { "setBoolValue", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_setBoolValue } } } },
+	 { "getBoolValue", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_getBoolValue } } } },
+};
+
+static int js_mem_init(JSContext* ctx, JSModuleDef* m) {
+    return JS_SetModuleExportList(ctx, m, js_mem_funcs, _countof(js_mem_funcs));
+}
+
+JSModuleDef* js_init_module_mem(JSContext* ctx, const char* module_name) {
+    JSModuleDef* m = JS_NewCModule(ctx, module_name, js_mem_init);
+    if(!m)
+        return NULL;
+    JS_AddModuleExportList(ctx, m, js_mem_funcs, _countof(js_mem_funcs));
+    return m;
 }

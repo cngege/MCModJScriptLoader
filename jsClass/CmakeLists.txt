@@ -1,4 +1,5 @@
 add_subdirectory(hook)
+add_subdirectory(http)
 add_subdirectory(mem)
 add_subdirectory(nativePoint)
 add_subdirectory(spdlog)

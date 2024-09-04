@@ -20,12 +20,12 @@ public:
 
 template<typename T>
 void Mem::setValue(uintptr_t ptr, T v) {
-    *(T*)ptr = v;
+    *reinterpret_cast<T*>(ptr) = v;
 }
 
 template<typename T>
 T Mem::getValue(uintptr_t ptr) {
-    return *(T*)ptr;
+    return *reinterpret_cast<T*>(ptr);
 }
 
 #endif //CLIENT_MEM_MEM_H

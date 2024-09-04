@@ -24,7 +24,7 @@
 
 #include "jsClass/JSManager.h"
 #include "jsClass/spdlog/spdlogClass.h"
-#include "jsClass/mem/memClass.h"
+//#include "jsClass/mem/JsModule_mem.h"
 #include "jsClass/hook/hookClass.h"
 #include "jsClass/nativePoint/nativePointClass.h"
 
@@ -71,18 +71,18 @@ auto MouseUpdate(__int64 a1, char mousebutton, char isDown, __int16 mouseX, __in
 	mouseupdatecall(a1, mousebutton, isDown, mouseX, mouseY, relativeMovementX, relativeMovementY, a8);
 }
 
-/*
-#include <vector>
-auto MouseUpdate2(uintptr_t thi,...) -> void {
-	std::vector<uintptr_t> argcs = {};
-	va_list args;
-	va_start(args, thi);
-	for(int i = 0; i < 7; ++i) {
-		argcs.push_back(va_arg(args, uintptr_t));
+
+JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, void* opaque) {
+	if(std::string(module_name).ends_with(".js")) {
+		return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string());
 	}
-	va_end(args);
-	return MouseUpdate((__int64)thi,(char)argcs[0], (char)argcs[1], (__int16)argcs[2], (__int16)argcs[3], (__int16)argcs[4], (__int16)argcs[5], (char)argcs[6]);
-}*/
+	else {
+		return js_module_loader(ctx, module_name, opaque);
+	}
+}
+
+
+
 static JSRuntime* rt = nullptr;
 static JSContext* ctx = nullptr;
 
@@ -90,6 +90,7 @@ static auto start(HMODULE hModule) -> void {
 	char* localAppData = nullptr;
 	size_t localsize = 0;
 	_dupenv_s(&localAppData, &localsize, "LOCALAPPDATA");
+	assert(localAppData == nullptr);
     //const char* local = getenv("LOCALAPPDATA");//C:\Users\CNGEGE\AppData\Local\Packages\microsoft.minecraftuwp_8wekyb3d8bbwe\AC
 	// 中文字体：https://ghproxy.cc/https://github.com/cngege/MCModJScriptLoader/releases/download/0.0.1/JNMYT.ttf
     fs::path moduleDir = std::string(localAppData) + "\\..\\RoamingState\\JSRunner";
@@ -97,6 +98,7 @@ static auto start(HMODULE hModule) -> void {
 
 	ModManager::getInstance()->pathCreate("");
 	ModManager::getInstance()->pathCreate("script");
+	ModManager::getInstance()->pathCreate("script/module");
 	ModManager::getInstance()->pathCreate("config");
 	ModManager::getInstance()->pathCreate("Assets");
 	ModManager::getInstance()->pathCreate("Assets/Fonts");
@@ -159,61 +161,27 @@ static auto start(HMODULE hModule) -> void {
 	js_std_init_handlers(rt);
 	JSManager::getInstance()->setctx(ctx);
 
-	JS_SetModuleLoaderFunc(rt, nullptr, js_module_loader, nullptr);
+	JS_SetModuleLoaderFunc(rt, nullptr, js_module_loader_local, nullptr);
 	js_init_module_std(ctx, "std");
 	js_init_module_os(ctx, "os");
+	
+	JSManager::getInstance()->loadNativeModule();
 
 	spdlogClass::Reg();
-	memClass::Reg();
 	hookClass::Reg();
 	nativePointClass::Reg();
 
-	for (const auto& entry : fs::directory_iterator(ModManager::getInstance()->getPath("script"))) {
-		if (entry.is_regular_file() && entry.path().extension() == ".js") {
-			std::ifstream jsfile(entry.path());
-			std::string content((std::istreambuf_iterator<char>(jsfile)), std::istreambuf_iterator<char>());
-			spdlog::info("JS Loader: {}", entry.path().filename().string());
-			JSValue val = JS_Eval(ctx, content.c_str(), content.size(), entry.path().filename().string().c_str(), JS_EVAL_TYPE_MODULE);
-			if(JS_IsException(val)) {
-				spdlog::error("JS Loader fail: {}", entry.path().string());
-
-				JSValue err = JS_GetException(ctx);
-				bool isError = JS_IsError(ctx, err);
-				std::string result_str;
-				if(isError) {
-					JSValue name = JS_GetPropertyStr(ctx, err, "name");
-					const char* errorname_str = JS_ToCString(ctx, name);
-					result_str = (errorname_str) ? errorname_str : "<unknown error name>";
-					result_str += " - ";
-					JS_FreeCString(ctx, errorname_str);
-					JS_FreeValue(ctx, name);
-					JSValue message = JS_GetPropertyStr(ctx, err, "message");
-					const char* message_str = JS_ToCString(ctx, message);
-					result_str += (message_str) ? std::string("\"") + message_str + "\"" : "<no message>";
-					result_str += ":: \n";
-					JS_FreeCString(ctx, message_str);
-					JS_FreeValue(ctx, message);
-					JSValue stack = JS_GetPropertyStr(ctx, err, "stack");
-					if(!JS_IsUndefined(stack)) {
-						const char* stack_str = JS_ToCString(ctx, stack);
-						if(stack_str) {
-							result_str += stack_str;
-							JS_FreeCString(ctx, stack_str);
-						}
-					}
-					JS_FreeValue(ctx, stack);
-				}
-				JS_FreeValue(ctx, err);
-				spdlog::error(result_str);
-			}
-			JS_FreeValue(ctx, val);
-		}
-	}
+	JSManager::getInstance()->loadJSFromFoder();
 }
 
 static auto stop()->void {
 	//卸载Hook
 	HookManager::disableAllHook();
+
+	// 释放JS接口申请的资源
+	spdlogClass::Dispose();
+	hookClass::Dispose();
+	nativePointClass::Dispose();
 
 	// JS释放
 	JS_FreeContext(ctx);

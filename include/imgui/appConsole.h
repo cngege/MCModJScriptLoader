@@ -12,6 +12,7 @@ struct ExampleAppConsole
     int                   HistoryPos;    // -1: new line, 0..History.Size-1 browsing history.
     ImGuiTextFilter       Filter;
     bool                  AutoScroll;
+    bool                  InputBox;
     bool                  ScrollToBottom;
 
     ExampleAppConsole() {
@@ -26,6 +27,7 @@ struct ExampleAppConsole
         Commands.push_back("CLEAR");
         Commands.push_back("CLASSIFY");
         AutoScroll = true;
+        InputBox = false;
         ScrollToBottom = false;
     }
     ~ExampleAppConsole() {
@@ -80,7 +82,8 @@ struct ExampleAppConsole
 
         // Options menu
         if(ImGui::BeginPopup("Options")) {
-            ImGui::Checkbox("Auto-scroll", &AutoScroll);
+            ImGui::Checkbox("滚动条", &AutoScroll);
+            ImGui::Checkbox("输入框", &InputBox);
             ImGui::EndPopup();
         }
         ImGui::SameLine();
@@ -128,24 +131,27 @@ struct ExampleAppConsole
             ImGui::PopStyleVar();
         }
         ImGui::EndChild();
-        ImGui::Separator();
+        
+        if(InputBox) {
+            ImGui::Separator();
 
-        // Command-line
-        bool reclaim_focus = false;
-        ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory;
-        if(ImGui::InputText("Input", InputBuf, IM_ARRAYSIZE(InputBuf), input_text_flags, &TextEditCallbackStub, (void*)this)) {
-            char* s = InputBuf;
-            Strtrim(s);
-            if(s[0])
-                ExecCommand(s);
-            strcpy_s(InputBuf, "");
-            reclaim_focus = true;
+            // Command-line
+            bool reclaim_focus = false;
+            ImGuiInputTextFlags input_text_flags = ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_EscapeClearsAll | ImGuiInputTextFlags_CallbackCompletion | ImGuiInputTextFlags_CallbackHistory;
+            if(ImGui::InputText("Input", InputBuf, IM_ARRAYSIZE(InputBuf), input_text_flags, &TextEditCallbackStub, (void*)this)) {
+                char* s = InputBuf;
+                Strtrim(s);
+                if(s[0])
+                    ExecCommand(s);
+                strcpy_s(InputBuf, "");
+                reclaim_focus = true;
+            }
+
+            // Auto-focus on window apparition
+            ImGui::SetItemDefaultFocus();
+            if(reclaim_focus)
+                ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
         }
-
-        // Auto-focus on window apparition
-        ImGui::SetItemDefaultFocus();
-        if(reclaim_focus)
-            ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 
         ImGui::End();
     }
