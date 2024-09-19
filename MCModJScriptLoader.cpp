@@ -90,7 +90,10 @@ static auto start(HMODULE hModule) -> void {
 	char* localAppData = nullptr;
 	size_t localsize = 0;
 	_dupenv_s(&localAppData, &localsize, "LOCALAPPDATA");
-	assert(localAppData == nullptr);
+	if(localAppData == nullptr) {
+		throw std::runtime_error("取环境变量 LOCALAPPDATA 失败");
+		return;
+	}
     //const char* local = getenv("LOCALAPPDATA");//C:\Users\CNGEGE\AppData\Local\Packages\microsoft.minecraftuwp_8wekyb3d8bbwe\AC
 	// 中文字体：https://ghproxy.cc/https://github.com/cngege/MCModJScriptLoader/releases/download/0.0.1/JNMYT.ttf
     fs::path moduleDir = std::string(localAppData) + "\\..\\RoamingState\\JSRunner";
@@ -151,7 +154,7 @@ static auto start(HMODULE hModule) -> void {
 		mouseupdate_info->hook();
 	}
 	else {
-		spdlog::warn("Mouse Hook fail.");
+		spdlog::warn("Mouse Hook fail. in {}", __FUNCTION__);
 	}
     ImguiHooks::InitImgui();
 
@@ -160,6 +163,12 @@ static auto start(HMODULE hModule) -> void {
 	ctx = JS_NewContext(rt);
 	js_std_init_handlers(rt);
 	JSManager::getInstance()->setctx(ctx);
+
+	// 开启BigNumber
+	//JS_AddIntrinsicBigFloat(ctx);
+	//JS_AddIntrinsicBigDecimal(ctx);
+	//JS_AddIntrinsicOperators(ctx);
+	//JS_EnableBignumExt(ctx, true);
 
 	JS_SetModuleLoaderFunc(rt, nullptr, js_module_loader_local, nullptr);
 	js_init_module_std(ctx, "std");

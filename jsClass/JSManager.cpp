@@ -58,7 +58,7 @@ JSModuleDef* js_init_module_mem(JSContext* ctx, const char* module_name);
 auto JSManager::loadNativeModule() -> void {
 	js_init_module_mem(m_ctx, "mem");
 
-
+	
 }
 
 auto JSManager::loadModuleFromFile(const std::string& path) -> JSModuleDef* {

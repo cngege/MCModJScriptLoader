@@ -42,13 +42,13 @@ struct ExampleAppConsole
     static char* Strdup(const char* s) { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = malloc(len); IM_ASSERT(buf); return (char*)memcpy(buf, (const void*)s, len); }
     static void  Strtrim(char* s) { char* str_end = s + strlen(s); while(str_end > s && str_end[-1] == ' ') str_end--; *str_end = 0; }
 
-    void    ClearLog() {
+    void ClearLog() {
         for(int i = 0; i < Items.Size; i++)
             free(Items[i]);
         Items.clear();
     }
 
-    void    AddLog(const char* fmt, ...) IM_FMTARGS(2) {
+    void AddLog(const char* fmt, ...) IM_FMTARGS(2) {
         // FIXME-OPT
         char buf[1024];
         va_list args;
@@ -59,7 +59,7 @@ struct ExampleAppConsole
         Items.push_back(Strdup(buf));
     }
 
-    void    Draw(const char* title, bool* p_open) {
+    void Draw(const char* title, bool* p_open) {
         ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
         if(!ImGui::Begin(title, p_open)) {
             ImGui::End();
@@ -156,7 +156,7 @@ struct ExampleAppConsole
         ImGui::End();
     }
 
-    void    ExecCommand(const char* command_line) {
+    void ExecCommand(const char* command_line) {
         AddLog("# %s\n", command_line);
 
         // Insert into history. First find match and delete it so it can be pushed to the back.
@@ -198,7 +198,7 @@ struct ExampleAppConsole
         return console->TextEditCallback(data);
     }
 
-    int     TextEditCallback(ImGuiInputTextCallbackData* data) {
+    int TextEditCallback(ImGuiInputTextCallbackData* data) {
         //AddLog("cursor: %d, selection: %d-%d", data->CursorPos, data->SelectionStart, data->SelectionEnd);
         switch(data->EventFlag) {
         case ImGuiInputTextFlags_CallbackCompletion:

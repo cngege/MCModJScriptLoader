@@ -17,6 +17,7 @@ static JSValue js_findSig(JSContext* ctx, JSValueConst this_val, int argc, JSVal
 		auto ptr = Mem::findSig(str, module.c_str());
 		JS_FreeCString(ctx, str);
 		return JS_NewInt64(ctx, ptr);
+		//return JS_NewBigInt64(ctx, ptr);
 	}
 	return JS_ThrowTypeError(ctx, "函数最少需要1个参数，当前参数个数：%d", argc);
 }

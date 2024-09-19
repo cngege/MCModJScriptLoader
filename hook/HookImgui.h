@@ -60,7 +60,7 @@ struct FrameContext {
 	ID3D12CommandAllocator* commandAllocator = nullptr;
 	ID3D12Resource* main_render_target_resource = nullptr;
 	D3D12_CPU_DESCRIPTOR_HANDLE main_render_target_descriptor;
-};
+}_FrameContext;
 uint64_t buffersCounts = -1;
 FrameContext* frameContext = nullptr;
 ID3D12DescriptorHeap* d3d12DescriptorHeapImGuiRender = nullptr;
