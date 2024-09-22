@@ -96,3 +96,11 @@ auto Mem::findSigRelay(uintptr_t ptr, const char* signature, size_t rang) -> uin
 	}
 }
 
+auto Mem::funcFromSigOffset(uintptr_t sig, int offset) -> uintptr_t {
+	auto jmpval = *reinterpret_cast<int*>(sig + offset);
+	return sig + offset + 4 + jmpval;
+}
+
+auto Mem::getBase(const char* module) ->uintptr_t {
+	return (uintptr_t)GetModuleHandleA(module);
+}
