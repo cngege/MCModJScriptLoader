@@ -1,4 +1,5 @@
-﻿#include "quickjs/quickjs.h"
+﻿#pragma once
+#include "quickjs/quickjs.h"
 #include <string>
 
 class JSManager {

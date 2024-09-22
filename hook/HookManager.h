@@ -1,4 +1,5 @@
-﻿#ifndef HOOK_HOOKMANAGER_H
+﻿#pragma once
+#ifndef HOOK_HOOKMANAGER_H
 #define HOOK_HOOKMANAGER_H
 
 #include "LightHook/LightHook.h"
