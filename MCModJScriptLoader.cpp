@@ -15,6 +15,7 @@
 #include "hook/HookImgui.h"
 
 #include "client/mem/mem.h"
+#include "client/utils/signcode.h"
 
 #include "client/utils/assets_net.h"
 
@@ -30,7 +31,7 @@
 
 using MouseUpdata = void(__fastcall*)(__int64, char, char, __int16, __int16, __int16, __int16, char);
 HookInstance* mouseupdate_info = nullptr;
-auto MouseUpdate(__int64 a1, char mousebutton, char isDown, __int16 mouseX, __int16 mouseY, __int16 relativeMovementX, __int16 relativeMovementY, char a8)->void {
+static auto MouseUpdate(__int64 a1, char mousebutton, char isDown, __int16 mouseX, __int16 mouseY, __int16 relativeMovementX, __int16 relativeMovementY, char a8)->void {
 	//Game::MouseKeyDown[mousebutton] = isDown;
 	//Game::GetModuleManager()->onMouseUpdate(mousebutton, isDown, mouseX, mouseY, relativeMovementX, relativeMovementY);
 
@@ -72,7 +73,8 @@ auto MouseUpdate(__int64 a1, char mousebutton, char isDown, __int16 mouseX, __in
 }
 
 
-JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, void* opaque) {
+
+static JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, void* opaque) {
 	if(std::string(module_name).ends_with(".js")) {
 		return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string());
 	}
@@ -81,6 +83,40 @@ JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, voi
 	}
 }
 
+//BedrockLogOut
+uintptr_t gamelogger_ori = 0;
+HookInstance* gamelogger_info = nullptr;
+static void BedrockLogOutHook(UINT type, const char* fmt, ...) {
+	try {
+		va_list va;
+		va_start(va, fmt);
+		char tn[1024];
+		memset(tn, '\0', 1024);
+		vsnprintf(tn, sizeof(tn) - 1, fmt, va);
+		if(tn[strlen(tn) - 1] == '\n') {
+			tn[strlen(tn) - 1] = '\0';
+		}
+		switch(type) {
+		case 1:
+			spdlog::debug(tn);
+			break;
+		case 2:
+			spdlog::info(tn);
+			break;
+		case 8:
+			spdlog::error(tn);
+			break;
+		case 4:
+		default:
+			spdlog::warn(tn);
+			break;
+		}
+		va_end(va);
+	}
+	catch(...) {
+		spdlog::error("游戏内部日志输出错误...");
+	}
+}
 
 
 static JSRuntime* rt = nullptr;
@@ -136,11 +172,10 @@ static auto start(HMODULE hModule) -> void {
 			break;
 		}
 	}));
-
     spdlog::set_default_logger(file_logger);
 
-    spdlog::set_level(spdlog::level::info);
-    spdlog::flush_on(spdlog::level::info);  // 日志保存等级
+    spdlog::set_level(spdlog::level::debug);
+    spdlog::flush_on(spdlog::level::debug);  // 日志保存等级
     spdlog::info("日志部分完工撒花..");
 	
 	// httplib 下载字体文件
@@ -148,15 +183,33 @@ static auto start(HMODULE hModule) -> void {
 	
 
     // 开启IMGUI HOOK
-    auto ptr = Mem::findSig("48 8B C4 48 89 58 ? 48 89 68 ? 48 89 70 ? 57 41 54 41 55 41 56 41 57 48 83 EC ? 44 0F");
-	if (ptr) {
-		mouseupdate_info = HookManager::addHook(ptr, (void*)&MouseUpdate);
-		mouseupdate_info->hook();
+	{
+		SignCode sign("MouseUpdate");
+		sign << "48 8B C4 48 89 58 ? 48 89 68 ? 48 89 70 ? 57 41 54 41 55 41 56 41 57 48 83 EC ? 44 0F";
+		if(sign) {
+			mouseupdate_info = HookManager::addHook(*sign, (void*)&MouseUpdate);
+			mouseupdate_info->hook();
+		}
+		else {
+			spdlog::warn("Mouse Hook fail. in {}", __FUNCTION__);
+		}
+		ImguiHooks::InitImgui();
 	}
-	else {
-		spdlog::warn("Mouse Hook fail. in {}", __FUNCTION__);
+
+
+	// BedrockLogOut 函数定位 内部有字符串 "!!! ERROR: Unable to format log output message !!!"
+	{
+		SignCode sign("BedrockLogOut");
+		sign << "48 89 54 24 ? 4C 89 44 24 ? 4C 89 4C 24 ? 55 53 56 57 41 56 41 57 48";
+		sign.AddSignCall("15 ? ? ? ? 41 8B CE E8", 9);
+		if(sign) {
+			gamelogger_info = HookManager::addHook(*sign, (void*)&BedrockLogOutHook);
+			gamelogger_info->hook();
+		}
+		else {
+			spdlog::warn("gamelogger Hook fail. in {}", __FUNCTION__);
+		}
 	}
-    ImguiHooks::InitImgui();
 
 	//JS Runner
 	rt = JS_NewRuntime();
