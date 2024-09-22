@@ -13,6 +13,7 @@ struct ExampleAppConsole
     ImGuiTextFilter       Filter;
     bool                  AutoScroll;
     bool                  InputBox;
+    bool                  PrintDebug;
     bool                  ScrollToBottom;
 
     ExampleAppConsole() {
@@ -28,6 +29,7 @@ struct ExampleAppConsole
         Commands.push_back("CLASSIFY");
         AutoScroll = true;
         InputBox = false;
+        PrintDebug = true;
         ScrollToBottom = false;
     }
     ~ExampleAppConsole() {
@@ -82,8 +84,9 @@ struct ExampleAppConsole
 
         // Options menu
         if(ImGui::BeginPopup("Options")) {
-            ImGui::Checkbox("滚动条", &AutoScroll);
+            ImGui::Checkbox("自动滚动", &AutoScroll);
             ImGui::Checkbox("输入框", &InputBox);
+            ImGui::Checkbox("打印Debug", &PrintDebug);
             ImGui::EndPopup();
         }
         ImGui::SameLine();
@@ -92,7 +95,7 @@ struct ExampleAppConsole
             ImGui::OpenPopup("Options");
 
         // Reserve enough left-over height for 1 separator + 1 input text
-        const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+        const float footer_height_to_reserve = InputBox ? ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing() : 0;
         if(ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar)) {
             if(ImGui::BeginPopupContextWindow()) {
                 if(ImGui::Selectable("Clear")) ClearLog();
@@ -112,6 +115,10 @@ struct ExampleAppConsole
                 bool has_color = false;
                 if(strstr(item, "[error]")) { color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f); has_color = true; }
                 if(strstr(item, "[warn]")) { color = ImVec4(1.0f, 1.0f, 0.0f, 1.0f); has_color = true; }
+                if(strstr(item, "[debug]")) {
+                    if(!PrintDebug) continue;
+                    color = ImVec4(0.82f, 0.82f, 0.82f, 1.0f); has_color = true;
+                }
                 else if(strncmp(item, "# ", 2) == 0) { color = ImVec4(1.0f, 0.8f, 0.6f, 1.0f); has_color = true; }
                 if(has_color)
                     ImGui::PushStyleColor(ImGuiCol_Text, color);
