@@ -41,6 +41,11 @@ static JSValue js_findSigRelay(JSContext* ctx, JSValueConst this_val, int argc, 
 	return JS_NewInt64(ctx, retptr);
 }
 
+static JSValue js_getBase(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+	int64_t ptr = Mem::getBase();
+	return JS_NewInt64(ctx, ptr);;
+}
+
 static JSValue js_setBoolValue(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
 	if(argc < 2) {
 		return JS_ThrowTypeError(ctx, "函数需要2个参数，当前参数个数：%d", argc);
@@ -80,6 +85,7 @@ static const JSCFunctionListEntry js_mem_funcs[] = {
     //JS_CFUNC_DEF("Get", 1, js_http_get_request),
 	 { "findSig", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_findSig } } } },
 	 { "findSigRelay", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_findSigRelay } } } },
+	 { "getBase", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_getBase}}}},
 	 { "setBoolValue", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_setBoolValue } } } },
 	 { "getBoolValue", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_getBoolValue } } } },
 };
