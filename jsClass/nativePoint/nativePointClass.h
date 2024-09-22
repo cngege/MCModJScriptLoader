@@ -2,6 +2,8 @@
 #include "quickjs/quickjs.h"
 #include <vector>
 
+
+typedef unsigned int UINT;
 struct DCCallVM_;
 enum NativeTypes
 {
@@ -42,6 +44,7 @@ public:
 
 public:
 	nativePointClass(uintptr_t);
+	nativePointClass(uintptr_t, UINT);
 	~nativePointClass();
 	uintptr_t get();
 
@@ -73,6 +76,7 @@ private:
 private:
 	DCCallVM_* m_vm = nullptr;
 	uintptr_t m_ptr = 0;
+	UINT m_freelen = 0;
 
 	std::vector<NativeTypes> m_agreeOn{};
 

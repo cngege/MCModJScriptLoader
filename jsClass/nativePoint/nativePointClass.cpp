@@ -4,6 +4,8 @@
 #include "../JSManager.h"
 #include "../client/mem/mem.h"
 
+#define NOMINMAX
+
 namespace {
 	//static JSClassID id;
 	static JSClassDef _nativePointClass = {
@@ -82,8 +84,20 @@ nativePointClass::nativePointClass(uintptr_t ptr) {
 	dcReset(m_vm);
 }
 
+nativePointClass::nativePointClass(uintptr_t ptr, UINT calloc) {
+	m_ptr = ptr;
+	m_vm = dcNewCallVM(1024);
+	m_freelen = calloc;
+	dcMode(m_vm, DC_CALL_C_DEFAULT);
+	dcReset(m_vm);
+}
+
 nativePointClass::~nativePointClass() {
 	dcFree(m_vm);
+	if(m_ptr && m_freelen > 0) {
+		free((void*)m_ptr);
+		m_freelen = 0;
+	}
 }
 
 uintptr_t nativePointClass::get() {
@@ -102,7 +116,15 @@ JSValue nativePointClass::constructor(JSContext* ctx, JSValueConst newTarget, in
 		return JS_ThrowTypeError(ctx, "参数一应为指针，类型应为Number");
 	}
 
-	auto self = new nativePointClass(ptr);
+	nativePointClass* self = nullptr;
+	int64_t memsize = 0;
+	if(ptr == 0 && argc >= 2 && JS_IsNumber(argv[1]) && JS_ToInt64(ctx, &memsize, argv[1]) >= 0 && memsize > 0) {
+		ptr = (int64_t)calloc(memsize, 1);
+		self = new nativePointClass(ptr, static_cast<UINT>(memsize));
+	}
+	else {
+		self = new nativePointClass(ptr);
+	}
 
 	if(argc >= 2) {
 		// 处理第二个参数
@@ -237,7 +259,7 @@ JSValue nativePointClass::setfloat(JSContext* ctx, JSValueConst newTarget, int a
 		return JS_ThrowTypeError(ctx, "参数一应为浮点数，类型应为float");
 	}
 	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
-	Mem::setValue<float>(thi->m_ptr, value);
+	Mem::setValue<float>(thi->m_ptr, static_cast<float>(value));
 	return JS_UNDEFINED;
 }
 
@@ -358,7 +380,6 @@ JSValue nativePointClass::call(JSContext* ctx, JSValueConst newTarget, int argc,
 				if(JS_ToFloat64(ctx, &valuef, argv[i - 1]) < 0) {
 					throw std::runtime_error("NativePoint.call(NativeTypes::Float)解析失败");
 				}
-#undef max
 				if(valuef > std::numeric_limits<float>::max()) {
 					spdlog::warn("NativePoint.call(NativeTypes::Float)解析时发现值大于float最大值：{}", valuef);
 				}
