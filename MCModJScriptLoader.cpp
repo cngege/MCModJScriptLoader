@@ -75,7 +75,7 @@ static auto MouseUpdate(__int64 a1, char mousebutton, char isDown, __int16 mouse
 
 
 static JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, void* opaque) {
-	if(std::string(module_name).ends_with(".js")) {
+	if(std::string(module_name).ends_with(".js") || std::string(module_name).ends_with(".ts")) {
 		return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string());
 	}
 	else {

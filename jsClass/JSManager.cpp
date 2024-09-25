@@ -92,7 +92,7 @@ auto JSManager::loadJSFromFoder(const std::string& folder) -> void {
 			std::ifstream jsfile(entry.path());
 			std::string content((std::istreambuf_iterator<char>(jsfile)), std::istreambuf_iterator<char>());
 			spdlog::info("JS Loader: {}", entry.path().filename().string());
-			JSValue val = JS_Eval(m_ctx, content.c_str(), content.size(), (fs::path(folder) / entry.path().filename()).string().c_str(), JS_EVAL_TYPE_MODULE);
+			JSValue val = JS_Eval(m_ctx, content.c_str(), content.size(), (fs::path(folder) / entry.path().filename()).string().c_str(), JS_EVAL_TYPE_MODULE | JS_EVAL_TYPE_GLOBAL);
 			if(JS_IsException(val)) {
 				spdlog::error("JS Loader fail: {}", entry.path().string());
 				auto result_str = JS_ErrorStackCheck(m_ctx);
