@@ -53,7 +53,7 @@ auto HookManager::enableAllHook() -> void {
 auto HookManager::disableAllHook() -> void {
 	std::shared_lock<std::shared_mutex> guard(map_lock_mutex);
 	for(auto& item : hookInfoHash) {
-		if(!item.second.first.Enabled) {
+		if(item.second.first.Enabled) {
 			if(!DisableHook(&item.second.first)) {
 				spdlog::warn("DisableHook 关闭Hook失败({}) - fromFunction {} - in {}", (const void*)item.first, __FUNCTION__, __LINE__);
 			}
