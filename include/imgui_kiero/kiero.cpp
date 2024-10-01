@@ -1,6 +1,6 @@
 ﻿#include "kiero.h"
 
-#include "LightHook/LightHook.h"
+#include "../hook/HookManager.h"
 #include <Windows.h>
 #include <assert.h>
 
@@ -636,25 +636,18 @@ kiero::Status::Enum kiero::bind(uint16_t _index, void** _original, void* _functi
 	// TODO: Need own detour function
 
 	assert(_original != NULL && _function != NULL);
+	assert(false);
 
 	if (g_renderType != RenderType::None) {
-#if KIERO_USE_MINHOOK
-		/*void* target = (void*)g_methodsTable[_index];
-		if (MH_CreateHook(target, _function, _original) != MH_OK || MH_EnableHook(target) != MH_OK) {
-			return Status::UnknownError;
-		}*/
-#else
 		void* target = (void*)g_methodsTable[_index];
 
 		auto info = CreateHook(target, _function);
 		*_original = info.Trampoline;
-		
-		if (!EnableHook(&info)) {
+
+		if(!EnableHook(&info)) {
 			assert(false);
 			return Status::UnknownError;
 		}
-#endif
-
 		return Status::Success;
 	}
 
@@ -664,12 +657,12 @@ kiero::Status::Enum kiero::bind(uint16_t _index, void** _original, void* _functi
 void* kiero::bind2(uint16_t _index, void* _function) {
 	void* target = (void*)g_methodsTable[_index];
 
-	auto info = CreateHook(target, _function);
-
-	if (!EnableHook(&info)) {
+	//auto info = CreateHook(target, _function);
+	auto info = HookManager::addHook((uintptr_t)target, _function);
+	if (!info->hook()) {
 		assert(false);
 	}
-	return info.Trampoline;
+	return info->origin;
 }
 
 void kiero::unbind(uint16_t _index) {
