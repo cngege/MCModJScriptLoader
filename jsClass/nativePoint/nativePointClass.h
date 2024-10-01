@@ -54,8 +54,12 @@ private:
 	static JSValue offset(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue addvtf(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue setAgree(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue setchar(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue getchar(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue setbool(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue getbool(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue setshort(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue getshort(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue setint(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue getint(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue setlong(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
@@ -68,6 +72,7 @@ private:
 	static JSValue getpoint(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 	static JSValue getstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue getCstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 
 	static JSValue call(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);

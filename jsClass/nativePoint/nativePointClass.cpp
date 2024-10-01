@@ -34,6 +34,10 @@ void nativePointClass::Reg() {
 	JS_SetPropertyStr(ctx, protoInstance, "setAgree", JS_NewCFunction(ctx, nativePointClass::setAgree, "setAgree", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "setbool", JS_NewCFunction(ctx, nativePointClass::setbool, "setbool", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "getbool", JS_NewCFunction(ctx, nativePointClass::getbool, "getbool", 0));
+	JS_SetPropertyStr(ctx, protoInstance, "setchar", JS_NewCFunction(ctx, nativePointClass::setchar, "setchar", 0));
+	JS_SetPropertyStr(ctx, protoInstance, "getchar", JS_NewCFunction(ctx, nativePointClass::getchar, "getchar", 0));
+	JS_SetPropertyStr(ctx, protoInstance, "setshort", JS_NewCFunction(ctx, nativePointClass::setshort, "setshort", 0));
+	JS_SetPropertyStr(ctx, protoInstance, "getshort", JS_NewCFunction(ctx, nativePointClass::getshort, "getshort", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "setint", JS_NewCFunction(ctx, nativePointClass::setint, "setint", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "getint", JS_NewCFunction(ctx, nativePointClass::getint, "getint", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "setlong", JS_NewCFunction(ctx, nativePointClass::setlong, "setlong", 0));
@@ -45,6 +49,7 @@ void nativePointClass::Reg() {
 	JS_SetPropertyStr(ctx, protoInstance, "setpoint", JS_NewCFunction(ctx, nativePointClass::setpoint, "setpoint", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "getpoint", JS_NewCFunction(ctx, nativePointClass::getpoint, "getpoint", 0));
 	JS_SetPropertyStr(ctx, protoInstance, "getstring", JS_NewCFunction(ctx, nativePointClass::getstring, "getstring", 0));
+	JS_SetPropertyStr(ctx, protoInstance, "getcstring", JS_NewCFunction(ctx, nativePointClass::getCstring, "getcstring", 0));
 
 	JSValue ctroInstance = JS_NewCFunction2(ctx, &nativePointClass::constructor, _nativePointClass.class_name, 0, JS_CFUNC_constructor, 0);
 	JS_SetConstructor(ctx, ctroInstance, protoInstance);
@@ -65,13 +70,11 @@ JSValue nativePointClass::FromPtr(uintptr_t ptr) {
 }
 
 JSValue nativePointClass::newNativePoint(uintptr_t ptr) {
-#pragma message( " Warning: 注意这里的野指针问题 " )
 	auto thi = new nativePointClass(ptr);
 	return FromPtr((uintptr_t)thi);
 }
 
 JSValue nativePointClass::newNativePoint(uintptr_t ptr, std::vector<NativeTypes> v) {
-#pragma message( " Warning: 注意这里的野指针问题 " )
 	auto thi = new nativePointClass(ptr);
 	thi->m_agreeOn = v;
 	return FromPtr((uintptr_t)thi);
@@ -96,6 +99,7 @@ nativePointClass::~nativePointClass() {
 	dcFree(m_vm);
 	if(m_ptr && m_freelen > 0) {
 		free((void*)m_ptr);
+		m_ptr = NULL;
 		m_freelen = 0;
 	}
 }
@@ -121,6 +125,7 @@ JSValue nativePointClass::constructor(JSContext* ctx, JSValueConst newTarget, in
 	if(ptr == 0 && argc >= 2 && JS_IsNumber(argv[1]) && JS_ToInt64(ctx, &memsize, argv[1]) >= 0 && memsize > 0) {
 		ptr = (int64_t)calloc(memsize, 1);
 		self = new nativePointClass(ptr, static_cast<UINT>(memsize));
+		return FromPtr((uintptr_t)self);
 	}
 	else {
 		self = new nativePointClass(ptr);
@@ -128,6 +133,9 @@ JSValue nativePointClass::constructor(JSContext* ctx, JSValueConst newTarget, in
 
 	if(argc >= 2) {
 		// 处理第二个参数
+		if(!JS_IsArray(ctx, argv[1])) {
+			return JS_ThrowTypeError(ctx, "参数二不是NativeTypes数组");
+		}
 		JSValue lengthVal = JS_GetPropertyStr(ctx, argv[1], "length");
 		uint64_t len = 0;
 		JS_ToIndex(ctx, &len, lengthVal);
@@ -160,6 +168,7 @@ JSValue nativePointClass::offset(JSContext* ctx, JSValueConst newTarget, int arg
 }
 
 JSValue nativePointClass::addvtf(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+	//todo: 
 	return JSValue();
 }
 
@@ -212,6 +221,43 @@ JSValue nativePointClass::setbool(JSContext* ctx, JSValueConst newTarget, int ar
 JSValue nativePointClass::getbool(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
 	return JS_NewBool(ctx, Mem::getValue<bool>(thi->m_ptr));
+}
+
+
+JSValue nativePointClass::setchar(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+	if(argc < 1) {
+		return JS_ThrowTypeError(ctx, "函数需要1个参数，当前参数个数：%d", argc);
+	}
+	INT32 value;
+	if(!JS_IsNumber(argv[0]) || JS_ToInt32(ctx, &value, argv[0]) < 0) {
+		return JS_ThrowTypeError(ctx, "参数一应为Char，类型应为Number");
+	}
+	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+	Mem::setValue<char>(thi->m_ptr, value);
+	return JS_UNDEFINED;
+}
+
+JSValue nativePointClass::getchar(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+	return JS_NewInt32(ctx, Mem::getValue<char>(thi->m_ptr));
+}
+
+JSValue nativePointClass::setshort(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+	if(argc < 1) {
+		return JS_ThrowTypeError(ctx, "函数需要1个参数，当前参数个数：%d", argc);
+	}
+	INT32 value;
+	if(!JS_IsNumber(argv[0]) || JS_ToInt32(ctx, &value, argv[0]) < 0) {
+		return JS_ThrowTypeError(ctx, "参数一应为Short，类型应为Number");
+	}
+	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+	Mem::setValue<short>(thi->m_ptr, value);
+	return JS_UNDEFINED;
+}
+
+JSValue nativePointClass::getshort(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+	return JS_NewInt32(ctx, Mem::getValue<short>(thi->m_ptr));
 }
 
 JSValue nativePointClass::setint(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
@@ -308,6 +354,12 @@ JSValue nativePointClass::getstring(JSContext* ctx, JSValueConst newTarget, int 
 	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
 	std::string& str = *(std::string*)thi->m_ptr;
 	return JS_NewString(ctx, str.c_str());
+}
+
+JSValue nativePointClass::getCstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+	auto str = (const char*)thi->m_ptr;
+	return JS_NewString(ctx, str);
 }
 
 ////////////////////////////// CALL /////////////////////////////////
