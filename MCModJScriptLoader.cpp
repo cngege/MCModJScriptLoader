@@ -25,54 +25,9 @@
 
 #include "jsClass/JSManager.h"
 #include "jsClass/spdlog/spdlogClass.h"
-//#include "jsClass/mem/JsModule_mem.h"
+#include "jsClass/otherProperties/otherJSClass.h"
 #include "jsClass/hook/hookClass.h"
 #include "jsClass/nativePoint/nativePointClass.h"
-
-using MouseUpdata = void(__fastcall*)(__int64, char, char, __int16, __int16, __int16, __int16, char);
-HookInstance* mouseupdate_info = nullptr;
-static auto MouseUpdate(__int64 a1, char mousebutton, char isDown, __int16 mouseX, __int16 mouseY, __int16 relativeMovementX, __int16 relativeMovementY, char a8)->void {
-	//Game::MouseKeyDown[mousebutton] = isDown;
-	//Game::GetModuleManager()->onMouseUpdate(mousebutton, isDown, mouseX, mouseY, relativeMovementX, relativeMovementY);
-
-	try
-	{
-		if (ImGui::GetCurrentContext() != nullptr) {
-			ImGuiMouseSource mouse_source = GetMouseSourceFromMessageExtraInfo();
-			ImGuiIO& io = ImGui::GetIO();
-			io.AddMouseSourceEvent(mouse_source);
-			switch (mousebutton) {
-			case 1:
-				io.AddMouseButtonEvent(0, isDown);
-				break;
-			case 2:
-				io.AddMouseButtonEvent(1, isDown);
-				break;
-			case 3:
-				io.AddMouseButtonEvent(2, isDown);
-				break;
-			case 4:
-				//io.MouseWheel = isDown < 0 ? -0.5f : 0.5f; //For scrolling
-				io.AddMouseWheelEvent(0.f, isDown < 0 ? -1.f : 1.f);
-				break;
-			default:
-				io.AddMousePosEvent(mouseX, mouseY);
-				break;
-			}
-			if (/*io.WantCaptureMouse && */io.WantCaptureMouseUnlessPopupClose)
-				return;
-		}
-	}
-	catch (const std::exception& ex)
-	{
-		spdlog::error("MouseUpdate 异常: {}", ex.what());
-	}
-
-	auto mouseupdatecall = (MouseUpdata)mouseupdate_info->origin;
-	mouseupdatecall(a1, mousebutton, isDown, mouseX, mouseY, relativeMovementX, relativeMovementY, a8);
-}
-
-
 
 static JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, void* opaque) {
 	if(std::string(module_name).ends_with(".js") || std::string(module_name).ends_with(".ts")) {
@@ -90,8 +45,8 @@ static void BedrockLogOutHook(UINT type, const char* fmt, ...) {
 	try {
 		va_list va;
 		va_start(va, fmt);
-		char tn[1024];
-		memset(tn, '\0', 1024);
+		char tn[0x1000];
+		memset(tn, '\0', 0x1000);
 		vsnprintf(tn, sizeof(tn) - 1, fmt, va);
 		if(tn[strlen(tn) - 1] == '\n') {
 			tn[strlen(tn) - 1] = '\0';
@@ -111,6 +66,7 @@ static void BedrockLogOutHook(UINT type, const char* fmt, ...) {
 			spdlog::warn(tn);
 			break;
 		}
+		reinterpret_cast<void(__fastcall*)(UINT, va_list)>(gamelogger_info->origin)(type, va);
 		va_end(va);
 	}
 	catch(...) {
@@ -121,6 +77,8 @@ static void BedrockLogOutHook(UINT type, const char* fmt, ...) {
 
 static JSRuntime* rt = nullptr;
 static JSContext* ctx = nullptr;
+auto stop() -> void;
+auto test() -> void;
 
 static auto start(HMODULE hModule) -> void {
 	char* localAppData = nullptr;
@@ -146,6 +104,7 @@ static auto start(HMODULE hModule) -> void {
         fs::remove(moduleDir / "app.log");
     }
 	ModManager::getInstance()->setImConfigPath("config/imgui.ini");
+	ModManager::getInstance()->setImLogPath("config/imgui_log.ini");
 
 	auto file_logger = spdlog::basic_logger_mt("MCModJScriptLoader", ModManager::getInstance()->getPath("app.log").string());
 	file_logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg) {
@@ -181,21 +140,7 @@ static auto start(HMODULE hModule) -> void {
 	// httplib 下载字体文件
 	http::downFont_JNMYT(ModManager::getInstance()->getPath("Assets/Fonts"));
 	
-
-    // 开启IMGUI HOOK
-	{
-		SignCode sign("MouseUpdate");
-		sign << "48 8B C4 48 89 58 ? 48 89 68 ? 48 89 70 ? 57 41 54 41 55 41 56 41 57 48 83 EC ? 44 0F";
-		if(sign) {
-			mouseupdate_info = HookManager::addHook(*sign, (void*)&MouseUpdate);
-			mouseupdate_info->hook();
-		}
-		else {
-			spdlog::warn("Mouse Hook fail. in {}", __FUNCTION__);
-		}
-		ImguiHooks::InitImgui();
-	}
-
+	ImguiHooks::InitImgui();
 
 	// BedrockLogOut 函数定位 内部有字符串 "!!! ERROR: Unable to format log output message !!!"
 	{
@@ -224,52 +169,75 @@ static auto start(HMODULE hModule) -> void {
 	//JS_EnableBignumExt(ctx, true);
 
 	JS_SetModuleLoaderFunc(rt, nullptr, js_module_loader_local, nullptr);
-	js_init_module_std(ctx, "std");
-	js_init_module_os(ctx, "os");
 	
 	JSManager::getInstance()->loadNativeModule();
 
 	spdlogClass::Reg();
 	hookClass::Reg();
 	nativePointClass::Reg();
+	otherJSClass::Reg();
 
 	JSManager::getInstance()->loadJSFromFoder();
+
+	JSManager::getInstance()->registerImGuiMouseHandle();	//注册鼠标按键相关事件
+	JSManager::getInstance()->runstdLoop();					// 耗时操作， 跑完JS队列， 使 setTimeout工作
+	test();
+	ModManager::getInstance()->loopback();	// 循环等待卸载
+	stop();
+	Sleep(100);
+	::FreeLibraryAndExitThread(hModule, 0);		//只能退出 CreateThread 创建的线程
 }
 
 static auto stop()->void {
-	//卸载Hook
-	HookManager::disableAllHook();
+	try {
+		//卸载Hook
+		HookManager::disableAllHook();
+		Sleep(10);
+		ImguiHooks::CloseImGui();
 
-	// 释放JS接口申请的资源
-	spdlogClass::Dispose();
-	hookClass::Dispose();
-	nativePointClass::Dispose();
 
-	// JS释放
-	JS_FreeContext(ctx);
-	JS_FreeRuntime(rt);
+		// 释放JS接口申请的资源
+		spdlogClass::Dispose();
+		hookClass::Dispose();
+		nativePointClass::Dispose();
+		otherJSClass::Dispose();
 
-	// spdlog shutdown
-	spdlog::shutdown();
+		// 释放模块资源
+		JSManager::getInstance()->freeNativeModule(rt);
+
+		// JS释放
+		JS_FreeContext(ctx);
+		JS_FreeRuntime(rt);
+
+		// spdlog shutdown
+		spdlog::shutdown();
+	}
+	catch(std::exception& _) {}
 }
 
 // Dll入口函数
 auto APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) -> BOOL {
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-        CreateThread(nullptr, NULL, (LPTHREAD_START_ROUTINE)start, hModule, NULL, nullptr);
+		CreateThread(nullptr, NULL, (LPTHREAD_START_ROUTINE)start, hModule, NULL, nullptr);
+		DisableThreadLibraryCalls(hModule);                                     //应用程序及其DLL的线程创建与销毁不再对此DLL进行通知
     }
+	//FreeLibrary()
     else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
-        /*if (status) {
-            // 反注入则关闭Hook
-            DisableHook(&info);
-        }*/
-		stop();
-    }
-
+		ModManager::getInstance()->stopSign();
+	}
+	
     return TRUE;
 }
 
-
+void test() {
+	//48 83 EC ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 83 3D 26
+	uintptr_t tif = ModManager::getModuleBase("TextInputFramework.dll");
+	uintptr_t fun = (uintptr_t)GetProcAddress((HMODULE)tif, "TextInputHostGetCurrent");
+	fun = tif + 0xBE740;
+	int a1 = 0;
+	void* ret = reinterpret_cast<void* (__fastcall*)()>(fun)();
+	spdlog::info("test - fun call  retaddr: {}", (void*)ret);
+}
 
 /*
 * https://cloud.tencent.com/developer/article/1879884
@@ -282,3 +250,40 @@ JS_ThrowOutOfMemory 内存不足相关
 JS_ThrowInternalError  该错误在JS引擎内部发生，特别是当它有太多数据要处理并且堆栈增长超过其关键限制时。当JS引擎被太多的递归，太多的切换情况等淹没时，就会发生这种情况
 
 */
+
+/*
+// #include <windows.h>
+#include <winrt/Windows.Foundation.h>
+#include <winrt/Windows.Foundation.Collections.h>
+#include <winrt/Windows.ApplicationModel.Core.h>
+#include <winrt/Windows.Graphics.Display.h>
+#include <winrt/Windows.UI.Core.h>
+#include <winrt/Windows.UI.Input.h>
+
+using namespace winrt;
+using namespace Windows;
+using namespace Windows::ApplicationModel::Core;
+using namespace Windows::Foundation::Numerics;
+using namespace Windows::Graphics::Display;
+using namespace Windows::UI;
+using namespace Windows::UI::Core;
+
+void x() {
+	CoreWindow window = CoreWindow::GetForCurrentThread();
+
+	
+	
+}
+
+
+*/
+
+
+
+
+
+
+
+
+
+
