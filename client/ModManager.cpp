@@ -1,6 +1,6 @@
 ﻿#include "ModManager.h"
 #include <Windows.h>
-
+#include "spdlog/spdlog.h"
 
 
 ModManager* ModManager::getInstance() {
@@ -8,11 +8,15 @@ ModManager* ModManager::getInstance() {
 	return &instance;
 }
 
+auto ModManager::getModuleBase(const std::string& module) -> uintptr_t {
+	static auto cachedBase = (uintptr_t)GetModuleHandle(module.c_str());
+	return cachedBase;
+}
+
 auto ModManager::getMCBase() -> uintptr_t {
 	static auto cachedBase = (uintptr_t)GetModuleHandle("Minecraft.Windows.exe");
 	return cachedBase;
 }
-
 
 auto ModManager::getMCRunnerPath() -> fs::path {
 	static fs::path mcPath;
@@ -48,6 +52,14 @@ auto ModManager::getImConfigPath() const -> const std::filesystem::path& {
 	return m_ImConfigIni;
 }
 
+auto ModManager::setImLogPath(std::filesystem::path path) -> void {
+	m_ImLogIni = m_moduleDir / path;
+}
+
+auto ModManager::getImLogPath() const -> const std::filesystem::path& {
+	return m_ImLogIni;
+}
+
 
 auto ModManager::pathCreate(const std::string& path) const -> bool {
 	if(path.empty()) {
@@ -67,6 +79,23 @@ auto ModManager::pathCreate(const std::string& path) const -> bool {
 
 auto ModManager::getPath(const std::string& path) const -> fs::path {
 	return m_moduleDir / path;
+}
+
+auto ModManager::stopSign() -> void {
+	modState = true;
+}
+
+auto ModManager::loopback() const -> void {
+	while(!modState) {
+		Sleep(100);
+	}
+}
+
+auto ModManager::trySafeExceptions(const std::exception& e) -> void {
+	if(!modState) {
+		spdlog::error("{} -：{}", "trySafeExceptions", e.what());
+		modState = true;
+	}
 }
 
 
