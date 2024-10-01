@@ -1,5 +1,4 @@
 ﻿#pragma once
-//ImGui Shit
 #ifndef HOOK_HOOKIMGUI_H
 #define HOOK_HOOKIMGUI_H
 
@@ -20,6 +19,7 @@
 
 #include "imgui/appConsole.h"
 #include "../client/ModManager.h"
+#include "../jsClass/JSManager.h"
 #include <io.h>
 
 
@@ -144,6 +144,9 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 			static std::string imconfig = ModManager::getInstance()->getImConfigPath().string();
 			io.IniFilename = imconfig.c_str();
 
+			static std::string imLogfile = ModManager::getInstance()->getImLogPath().string();
+			io.LogFilename = imLogfile.c_str();
+
 			initContext = true;
 		}
 		ImGui_ImplDX11_NewFrame();
@@ -152,8 +155,10 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 
 		//Render::Updata();
 		//ImGui::ShowDemoWindow();
-		bool show = true;
+		static bool show = true;
 		GetImguiConsole()->Draw("Logger Console:", &show);
+
+		JSManager::getInstance()->onImGuiRender();
 		//Game::GetModuleManager()->onImGUIRender();
 		{
 			/*
@@ -270,6 +275,9 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 			static std::string imconfig = ModManager::getInstance()->getImConfigPath().string();
 			io.IniFilename = imconfig.c_str();
 
+			static std::string imLogfile = ModManager::getInstance()->getImLogPath().string();
+			io.LogFilename = imLogfile.c_str();
+
 			d3d12Device->Release();
 
 			initContext = true;
@@ -281,8 +289,10 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 
 		//Render::Updata();
 		//ImGui::ShowDemoWindow();
-		bool show = true;
+		static bool show = true;
 		GetImguiConsole()->Draw("Logger Console:", &show);
+
+		JSManager::getInstance()->onImGuiRender();
 		//Game::GetModuleManager()->onImGUIRender();
 		{
 			/*
