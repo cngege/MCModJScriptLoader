@@ -50,30 +50,58 @@ JSValue spdlogClass::constructor(JSContext* ctx, JSValueConst newTarget, int arg
 }
 
 JSValue spdlogClass::info(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
-	auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[0]));
-	spdlog::info(str);
-	JS_FreeCString(ctx, str);
+	std::string allstr;
+	for(int i = 0; i < argc; i++) {
+		auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[i]));
+		if(i) {
+			allstr += " ";
+		}
+		allstr += str;
+		JS_FreeCString(ctx, str);
+	}
+	spdlog::info(allstr);
 	return JS_UNINITIALIZED;
 }
 
 JSValue spdlogClass::warn(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
-	auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[0]));
-	spdlog::warn(str);
-	JS_FreeCString(ctx, str);
+	std::string allstr;
+	for(int i = 0; i < argc; i++) {
+		auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[i]));
+		if(i) {
+			allstr += " ";
+		}
+		allstr += str;
+		JS_FreeCString(ctx, str);
+	}
+	spdlog::warn(allstr);
 	return JS_UNINITIALIZED;
 }
 
 JSValue spdlogClass::error(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
-	auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[0]));
-	spdlog::error(str);
-	JS_FreeCString(ctx, str);
+	std::string allstr;
+	for(int i = 0; i < argc; i++) {
+		auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[i]));
+		if(i) {
+			allstr += " ";
+		}
+		allstr += str;
+		JS_FreeCString(ctx, str);
+	}
+	spdlog::error(allstr);
 	return JS_UNINITIALIZED;
 }
 
 JSValue spdlogClass::debug(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
-	auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[0]));
-	spdlog::debug(str);
-	JS_FreeCString(ctx, str);
+	std::string allstr;
+	for(int i = 0; i < argc; i++) {
+		auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[i]));
+		if(i) {
+			allstr += " ";
+		}
+		allstr += str;
+		JS_FreeCString(ctx, str);
+	}
+	spdlog::debug(allstr);
 	return JS_UNINITIALIZED;
 }
 
