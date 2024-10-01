@@ -42,7 +42,19 @@ static JSValue js_findSigRelay(JSContext* ctx, JSValueConst this_val, int argc, 
 }
 
 static JSValue js_getBase(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
-	int64_t ptr = Mem::getBase();
+	int64_t ptr = 0;
+	if(argc >= 1) {
+		if(JS_IsString(argv[0])) {
+			const char* module = JS_ToCString(ctx, argv[0]);
+			ptr = Mem::getBase(module);
+		}
+		else {
+			return JS_ThrowTypeError(ctx, "参数一传参时应传递String");
+		}
+	}
+	else {
+		ptr = Mem::getBase();
+	}
 	return JS_NewInt64(ctx, ptr);;
 }
 
