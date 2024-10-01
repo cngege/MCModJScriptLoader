@@ -37,7 +37,7 @@ struct NativeUserData
 namespace {
 	static JSClassID id;
 	static JSClassDef _hookClass = {
-		.class_name{"hook"},
+		.class_name{"HookBase"},
 		.finalizer{[](JSRuntime* rt, JSValue val) {
 				auto hook = (hookClass*)JS_GetOpaque(val, id);
 				//delete hook;
@@ -98,10 +98,9 @@ void hookClass::Reg() {
 }
 
 void hookClass::Dispose() {
-	spdlog::info("(kan jian wo jiu hui lai gia dai ma)hookClass::Dispose");
-
-	for(auto& it : thisdispose) {
+	for(auto it : thisdispose) {
 		delete it;
+		it = nullptr;
 	}
 	thisdispose.clear();
 }
@@ -186,10 +185,10 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 				paras.emplace_back(JS_NewBool(ctx, dcbArgBool(args)));
 				break;
 			case NativeTypes::Char:
-				paras.emplace_back(JS_NewInt64(ctx, dcbArgChar(args)));
+				paras.emplace_back(JS_NewInt32(ctx, dcbArgChar(args)));
 				break;
 			case NativeTypes::UnsignedChar:
-				paras.emplace_back(JS_NewInt64(ctx, dcbArgUChar(args)));
+				paras.emplace_back(JS_NewInt32(ctx, dcbArgUChar(args)));
 				break;
 			case NativeTypes::Short:
 				paras.emplace_back(JS_NewInt64(ctx, dcbArgShort(args)));
@@ -371,8 +370,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 	}
 	catch(std::exception& e) {
 		spdlog::error(e.what());
-		spdlog::error("错误发生在-函数：{}，文件：{}", __FUNCTION__, __FILE__);
-		throw e;
+		spdlog::error("错误发生在-函数：{}，文件：{}:", __FUNCTION__, __FILE__,__LINE__);
 	}
 
 	return hookClass::getTypeSignature(userData->agreeOn[0]);
