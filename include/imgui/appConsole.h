@@ -2,6 +2,8 @@
 #define HOOK_APPCONSOLE_H
 
 #include "imgui.h"
+#include "../client/ModManager.h"
+#include "../jsClass/JSManager.h"
 
 struct ExampleAppConsole
 {
@@ -14,6 +16,7 @@ struct ExampleAppConsole
     bool                  AutoScroll;
     bool                  InputBox;
     bool                  PrintDebug;
+    bool                  ShowDemoWindow;
     bool                  ScrollToBottom;
 
     ExampleAppConsole() {
@@ -30,6 +33,7 @@ struct ExampleAppConsole
         AutoScroll = true;
         InputBox = false;
         PrintDebug = true;
+        ShowDemoWindow = false;
         ScrollToBottom = false;
     }
     ~ExampleAppConsole() {
@@ -41,7 +45,7 @@ struct ExampleAppConsole
     // Portable helpers
     static int   Stricmp(const char* s1, const char* s2) { int d; while((d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; } return d; }
     static int   Strnicmp(const char* s1, const char* s2, int n) { int d = 0; while(n > 0 && (d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; n--; } return d; }
-    static char* Strdup(const char* s) { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = malloc(len); IM_ASSERT(buf); return (char*)memcpy(buf, (const void*)s, len); }
+    static char* Strdup(const char* s) { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = malloc(len); IM_ASSERT(buf); if(buf == 0) return nullptr; return (char*)memcpy(buf, (const void*)s, len); }
     static void  Strtrim(char* s) { char* str_end = s + strlen(s); while(str_end > s && str_end[-1] == ' ') str_end--; *str_end = 0; }
 
     void ClearLog() {
@@ -62,6 +66,10 @@ struct ExampleAppConsole
     }
 
     void Draw(const char* title, bool* p_open) {
+        if(ShowDemoWindow) {
+            ImGui::ShowDemoWindow(&ShowDemoWindow);
+        }
+
         ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
         if(!ImGui::Begin(title, p_open)) {
             ImGui::End();
@@ -87,18 +95,37 @@ struct ExampleAppConsole
             ImGui::Checkbox("自动滚动", &AutoScroll);
             ImGui::Checkbox("输入框", &InputBox);
             ImGui::Checkbox("打印Debug", &PrintDebug);
+            ImGui::Checkbox("Demo窗口", &ShowDemoWindow);
             ImGui::EndPopup();
         }
+
+        // Script menu
+        if(ImGui::BeginPopup("Script")) {
+            // TODO: 各脚本 可以控制各脚本的一个bool值信号
+            // TODO: 注册各脚本
+            // 最好是遍历一个map
+            JSManager::getInstance()->onImGuiRenderScriptSig();
+            ImGui::EndPopup();
+        }
+
         ImGui::SameLine();
-        // Options, Filter
+        // Options, Filter ,Script
         if(ImGui::SmallButton("选项"))
             ImGui::OpenPopup("Options");
+
+        ImGui::SameLine();
+        if(ImGui::SmallButton("脚本"))
+            ImGui::OpenPopup("Script");
+
+        ImGui::SameLine();
+        if(ImGui::SmallButton("卸载")) { ModManager::getInstance()->stopSign(); };
+        
 
         // Reserve enough left-over height for 1 separator + 1 input text
         const float footer_height_to_reserve = InputBox ? ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing() : 0;
         if(ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar)) {
             if(ImGui::BeginPopupContextWindow()) {
-                if(ImGui::Selectable("Clear")) ClearLog();
+                if(ImGui::Selectable("清除")) ClearLog();
                 ImGui::EndPopup();
             }
 
