@@ -3,6 +3,7 @@
 
 #include <string>
 #include <filesystem>
+#include <functional>
 
 namespace fs = std::filesystem;
 
@@ -12,6 +13,7 @@ public:
 
 	static auto getModuleBase(const std::string& module) -> uintptr_t;
 	static auto getMCBase() -> uintptr_t;
+	static auto getCoreWindow() -> uintptr_t;
 	static auto getMCRunnerPath() -> fs::path;
 	static auto getMCFolderPath() -> fs::path;
 	
@@ -29,11 +31,14 @@ public:
 	auto pathCreate(const std::string& path) const-> bool;
 	auto getPath(const std::string& path) const-> fs::path;
 
+	auto runinModThread(std::function<void()>)-> void;
 	auto stopSign() -> void;
 	auto loopback() const -> void;
 
 	// 收到异常后打印并停止dll
 	auto trySafeExceptions(const std::exception&) -> void;
+
+	auto disableMod(uintptr_t) -> void;
 
 private:
 	bool modState = 0;

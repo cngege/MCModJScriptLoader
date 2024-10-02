@@ -175,3 +175,9 @@ JSValue NativeListenEvent(const std::string& eventname, JSCFunction jsfun, const
 	}
 	return jfun;	// 用于移除
 }
+
+void NativeRemoveEvent(const std::string& eventname, JSValue jsfun) {
+	auto ctx = JSManager::getInstance()->getctx();
+	JSValue argvs[] = { JS_NewString(ctx, eventname.c_str()), jsfun };
+	js_removeEvent(ctx, JS_UNDEFINED, 2, argvs);
+}

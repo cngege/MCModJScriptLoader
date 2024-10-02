@@ -2,6 +2,21 @@
 
 #include <windows.h>
 #include <windowsx.h> // GET_X_LPARAM(), GET_Y_LPARAM()
+#include "spdlog/spdlog.h"
+
+#include <winrt/windows.ui.core.h>
+#include <winrt/base.h>
+#include <windows.system.h>
+#include <winrt/Windows.Foundation.h>
+using winrt::Windows::UI::Core::CharacterReceivedEventArgs;
+using winrt::Windows::UI::Core::CoreWindow;
+using winrt::Windows::UI::Core::KeyEventArgs;
+using winrt::Windows::Foundation::TypedEventHandler;
+using winrt::Windows::System::VirtualKey;
+using winrt::Windows::UI::Core::CorePhysicalKeyStatus;
+using winrt::Windows::UI::Core::CoreVirtualKeyStates;
+
+static CoreWindow win = NULL;
 
 ImGuiMouseSource GetMouseSourceFromMessageExtraInfo()
 {
@@ -19,6 +34,19 @@ void ImGui_ImplUWP_AddKeyEvent(ImGuiKey key, bool down, int native_keycode, int 
 	io.AddKeyEvent(key, down);
 	io.SetKeyEventNativeData(key, native_keycode, native_scancode); // To support legacy indexing (<1.87 user code)
 	IM_UNUSED(native_scancode);
+}
+
+static bool IsVkDown(int vk) {
+	CoreVirtualKeyStates states = win.GetKeyState((VirtualKey)VK_CONTROL);
+	return states == CoreVirtualKeyStates::Down;
+}
+
+static void ImGui_ImplUwp_UpdateKeyModifiers() {
+	ImGuiIO& io = ImGui::GetIO();
+	io.AddKeyEvent(ImGuiMod_Ctrl, IsVkDown(VK_CONTROL));
+	io.AddKeyEvent(ImGuiMod_Shift, IsVkDown(VK_SHIFT));
+	io.AddKeyEvent(ImGuiMod_Alt, IsVkDown(VK_MENU));
+	io.AddKeyEvent(ImGuiMod_Super, IsVkDown(VK_APPS));
 }
 
 IMGUI_IMPL_API LRESULT ImGui_UWP_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -108,4 +136,276 @@ IMGUI_IMPL_API LRESULT ImGui_UWP_WndProcHandler(HWND hwnd, UINT msg, WPARAM wPar
 	}
 
     return 0;
+}
+
+
+#define IM_VK_KEYPAD_ENTER      (VK_RETURN + 256)
+
+static ImGuiKey ImGui_ImplUwp_VirtualKeyToImGuiKey(WPARAM wParam) {
+	switch(wParam) {
+	case VK_TAB: return ImGuiKey_Tab;
+	case VK_LEFT: return ImGuiKey_LeftArrow;
+	case VK_RIGHT: return ImGuiKey_RightArrow;
+	case VK_UP: return ImGuiKey_UpArrow;
+	case VK_DOWN: return ImGuiKey_DownArrow;
+	case VK_PRIOR: return ImGuiKey_PageUp;
+	case VK_NEXT: return ImGuiKey_PageDown;
+	case VK_HOME: return ImGuiKey_Home;
+	case VK_END: return ImGuiKey_End;
+	case VK_INSERT: return ImGuiKey_Insert;
+	case VK_DELETE: return ImGuiKey_Delete;
+	case VK_BACK: return ImGuiKey_Backspace;
+	case VK_SPACE: return ImGuiKey_Space;
+	case VK_RETURN: return ImGuiKey_Enter;
+	case VK_ESCAPE: return ImGuiKey_Escape;
+	case VK_OEM_7: return ImGuiKey_Apostrophe;
+	case VK_OEM_COMMA: return ImGuiKey_Comma;
+	case VK_OEM_MINUS: return ImGuiKey_Minus;
+	case VK_OEM_PERIOD: return ImGuiKey_Period;
+	case VK_OEM_2: return ImGuiKey_Slash;
+	case VK_OEM_1: return ImGuiKey_Semicolon;
+	case VK_OEM_PLUS: return ImGuiKey_Equal;
+	case VK_OEM_4: return ImGuiKey_LeftBracket;
+	case VK_OEM_5: return ImGuiKey_Backslash;
+	case VK_OEM_6: return ImGuiKey_RightBracket;
+	case VK_OEM_3: return ImGuiKey_GraveAccent;
+	case VK_CAPITAL: return ImGuiKey_CapsLock;
+	case VK_SCROLL: return ImGuiKey_ScrollLock;
+	case VK_NUMLOCK: return ImGuiKey_NumLock;
+	case VK_SNAPSHOT: return ImGuiKey_PrintScreen;
+	case VK_PAUSE: return ImGuiKey_Pause;
+	case VK_NUMPAD0: return ImGuiKey_Keypad0;
+	case VK_NUMPAD1: return ImGuiKey_Keypad1;
+	case VK_NUMPAD2: return ImGuiKey_Keypad2;
+	case VK_NUMPAD3: return ImGuiKey_Keypad3;
+	case VK_NUMPAD4: return ImGuiKey_Keypad4;
+	case VK_NUMPAD5: return ImGuiKey_Keypad5;
+	case VK_NUMPAD6: return ImGuiKey_Keypad6;
+	case VK_NUMPAD7: return ImGuiKey_Keypad7;
+	case VK_NUMPAD8: return ImGuiKey_Keypad8;
+	case VK_NUMPAD9: return ImGuiKey_Keypad9;
+	case VK_DECIMAL: return ImGuiKey_KeypadDecimal;
+	case VK_DIVIDE: return ImGuiKey_KeypadDivide;
+	case VK_MULTIPLY: return ImGuiKey_KeypadMultiply;
+	case VK_SUBTRACT: return ImGuiKey_KeypadSubtract;
+	case VK_ADD: return ImGuiKey_KeypadAdd;
+	case IM_VK_KEYPAD_ENTER: return ImGuiKey_KeypadEnter;
+	case VK_LSHIFT: return ImGuiKey_LeftShift;
+	case VK_LCONTROL: return ImGuiKey_LeftCtrl;
+	case VK_LMENU: return ImGuiKey_LeftAlt;
+	case VK_LWIN: return ImGuiKey_LeftSuper;
+	case VK_RSHIFT: return ImGuiKey_RightShift;
+	case VK_RCONTROL: return ImGuiKey_RightCtrl;
+	case VK_RMENU: return ImGuiKey_RightAlt;
+	case VK_RWIN: return ImGuiKey_RightSuper;
+	case VK_APPS: return ImGuiKey_Menu;
+	case '0': return ImGuiKey_0;
+	case '1': return ImGuiKey_1;
+	case '2': return ImGuiKey_2;
+	case '3': return ImGuiKey_3;
+	case '4': return ImGuiKey_4;
+	case '5': return ImGuiKey_5;
+	case '6': return ImGuiKey_6;
+	case '7': return ImGuiKey_7;
+	case '8': return ImGuiKey_8;
+	case '9': return ImGuiKey_9;
+	case 'A': return ImGuiKey_A;
+	case 'B': return ImGuiKey_B;
+	case 'C': return ImGuiKey_C;
+	case 'D': return ImGuiKey_D;
+	case 'E': return ImGuiKey_E;
+	case 'F': return ImGuiKey_F;
+	case 'G': return ImGuiKey_G;
+	case 'H': return ImGuiKey_H;
+	case 'I': return ImGuiKey_I;
+	case 'J': return ImGuiKey_J;
+	case 'K': return ImGuiKey_K;
+	case 'L': return ImGuiKey_L;
+	case 'M': return ImGuiKey_M;
+	case 'N': return ImGuiKey_N;
+	case 'O': return ImGuiKey_O;
+	case 'P': return ImGuiKey_P;
+	case 'Q': return ImGuiKey_Q;
+	case 'R': return ImGuiKey_R;
+	case 'S': return ImGuiKey_S;
+	case 'T': return ImGuiKey_T;
+	case 'U': return ImGuiKey_U;
+	case 'V': return ImGuiKey_V;
+	case 'W': return ImGuiKey_W;
+	case 'X': return ImGuiKey_X;
+	case 'Y': return ImGuiKey_Y;
+	case 'Z': return ImGuiKey_Z;
+	case VK_F1: return ImGuiKey_F1;
+	case VK_F2: return ImGuiKey_F2;
+	case VK_F3: return ImGuiKey_F3;
+	case VK_F4: return ImGuiKey_F4;
+	case VK_F5: return ImGuiKey_F5;
+	case VK_F6: return ImGuiKey_F6;
+	case VK_F7: return ImGuiKey_F7;
+	case VK_F8: return ImGuiKey_F8;
+	case VK_F9: return ImGuiKey_F9;
+	case VK_F10: return ImGuiKey_F10;
+	case VK_F11: return ImGuiKey_F11;
+	case VK_F12: return ImGuiKey_F12;
+	default: return ImGuiKey_None;
+	}
+}
+
+void keydown(CoreWindow const& sender, KeyEventArgs const& args) {
+	if(ImGui::GetCurrentContext() == nullptr)
+		return;
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	VirtualKey key;
+	CorePhysicalKeyStatus keyStatus;
+	key = args.VirtualKey();
+	keyStatus = args.KeyStatus();
+
+	const bool is_key_down = true;
+	if((int32_t)key < 256) {
+		// Submit modifiers
+		ImGui_ImplUwp_UpdateKeyModifiers();
+
+		int vk = (int)key;
+		if((key == (VirtualKey)VK_RETURN) && keyStatus.IsExtendedKey)
+			vk = IM_VK_KEYPAD_ENTER;
+
+		// Submit key event
+		const ImGuiKey key = ImGui_ImplUwp_VirtualKeyToImGuiKey(vk);
+		const int scancode = keyStatus.ScanCode;
+		if(key != ImGuiKey_None)
+			ImGui_ImplUWP_AddKeyEvent(key, is_key_down, vk, scancode);
+
+		// Submit individual left/right modifier events
+		if(vk == VK_SHIFT) {
+			// Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in ImGui_ImplUwp_ProcessKeyEventsWorkarounds()
+			if(IsVkDown(VK_LSHIFT) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftShift, is_key_down, VK_LSHIFT, scancode); }
+			if(IsVkDown(VK_RSHIFT) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_RightShift, is_key_down, VK_RSHIFT, scancode); }
+		}
+		else if(vk == VK_CONTROL) {
+			if(IsVkDown(VK_LCONTROL) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftCtrl, is_key_down, VK_LCONTROL, scancode); }
+			if(IsVkDown(VK_RCONTROL) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_RightCtrl, is_key_down, VK_RCONTROL, scancode); }
+		}
+		else if(vk == VK_MENU || keyStatus.IsMenuKeyDown) {
+			if(IsVkDown(VK_LMENU) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
+			if(IsVkDown(VK_RMENU) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_RightAlt, is_key_down, VK_RMENU, scancode); }
+
+			if(!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU)) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
+		}
+	}
+}
+
+void keyup(CoreWindow const& sender, KeyEventArgs const& args) {
+	if(ImGui::GetCurrentContext() == nullptr)
+		return;
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	VirtualKey key;
+	CorePhysicalKeyStatus keyStatus;
+	key = args.VirtualKey();
+	keyStatus = args.KeyStatus();
+
+	const bool is_key_down = false;
+	if((int32_t)key < 256) {
+		// Submit modifiers
+		ImGui_ImplUwp_UpdateKeyModifiers();
+
+		int vk = (int)key;
+		if((key == (VirtualKey)VK_RETURN) && keyStatus.IsExtendedKey)
+			vk = IM_VK_KEYPAD_ENTER;
+
+		// Submit key event
+		const ImGuiKey key = ImGui_ImplUwp_VirtualKeyToImGuiKey(vk);
+		const int scancode = keyStatus.ScanCode;
+		if(key != ImGuiKey_None)
+			ImGui_ImplUWP_AddKeyEvent(key, is_key_down, vk, scancode);
+
+		// Submit individual left/right modifier events
+		if(vk == VK_SHIFT) {
+			// Important: Shift keys tend to get stuck when pressed together, missing key-up events are corrected in ImGui_ImplUwp_ProcessKeyEventsWorkarounds()
+			if(IsVkDown(VK_LSHIFT) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftShift, is_key_down, VK_LSHIFT, scancode); }
+			if(IsVkDown(VK_RSHIFT) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_RightShift, is_key_down, VK_RSHIFT, scancode); }
+		}
+		else if(vk == VK_CONTROL) {
+			if(IsVkDown(VK_LCONTROL) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftCtrl, is_key_down, VK_LCONTROL, scancode); }
+			if(IsVkDown(VK_RCONTROL) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_RightCtrl, is_key_down, VK_RCONTROL, scancode); }
+		}
+		else if(vk == VK_MENU || !keyStatus.IsMenuKeyDown) {
+			if(IsVkDown(VK_LMENU) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
+			if(IsVkDown(VK_RMENU) == is_key_down) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_RightAlt, is_key_down, VK_RMENU, scancode); }
+
+			if(!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU)) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
+		}
+	}
+}
+
+unsigned short UTF32ToUTF16(UINT32 utf32) {
+	unsigned int h, l;
+
+	if(utf32 < 0x10000) {
+		h = 0;
+		l = utf32;
+		return utf32;
+	}
+	unsigned int t = utf32 - 0x10000;
+	h = (((t << 12) >> 22) + 0xD800);
+	l = (((t << 22) >> 22) + 0xDC00);
+	unsigned short ret = ((h << 16) | (l & 0x0000FFFF));
+	return ret;
+}
+
+void characterReceived(CoreWindow const& sender, CharacterReceivedEventArgs const& args) {
+	if(ImGui::GetCurrentContext() == nullptr)
+		return;
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	UINT32 code = args.KeyCode();
+
+	io.AddInputCharacterUTF16(UTF32ToUTF16(code));
+
+	return;
+}
+
+
+
+
+
+
+
+
+
+static winrt::event_token token_cookie_keydown;
+static winrt::event_token token_cookie_keyup;
+static winrt::event_token token_cookie_characterReceived;
+
+
+
+
+// on CoreWindow Thread Call
+void registerCoreWindowEventHandle() {
+	// 获取corewindow
+	win = CoreWindow::GetForCurrentThread();
+	if(win == NULL) {
+		spdlog::error(" CoreWindow::GetForCurrentThread() 获取失败,可能不是在 CoreWindow 的UI线程调用");
+		return;
+	}
+
+	// 注册事件
+	token_cookie_keydown = win.KeyDown(TypedEventHandler<CoreWindow, KeyEventArgs>(&keydown));
+	token_cookie_keyup = win.KeyUp(TypedEventHandler<CoreWindow, KeyEventArgs>(&keyup));
+	token_cookie_characterReceived = win.CharacterReceived(TypedEventHandler<CoreWindow, CharacterReceivedEventArgs>(&characterReceived));
+
+
+}
+
+void unregisterCoreWindowEventHandle() {
+	if(win) {
+		// 取消注册事件
+		win.KeyDown(token_cookie_keydown);
+		win.KeyUp(token_cookie_keyup);
+		win.CharacterReceived(token_cookie_characterReceived);
+	}
 }

@@ -4,6 +4,9 @@
 #include "../client/ModManager.h"
 #include "spdlog/spdlog.h"
 #include "eventSystem/JsModule_eventSystem.h"
+#include "imgui/imgui_uwp_wndProc.h"
+#include <unordered_map>
+#include <shared_mutex>
 
 
 static std::string JS_ErrorStackCheck(JSContext* ctx) {
@@ -120,8 +123,7 @@ auto JSManager::loadJSFromFoder(const std::string& folder) -> void {
 	}
 }
 
-#include <unordered_map>
-#include <shared_mutex>
+
 std::unordered_map<std::string, JSValue> modulesig_map;
 static std::shared_mutex rw_mtx_modulesigList;
 
@@ -202,7 +204,7 @@ auto JSManager::onImGuiRender() -> void {
 	NativeBroadcastEvent("onRender");
 }
 
-#include "imgui/imgui_uwp_wndProc.h"
+
 //mousebutton
 //isDown
 //mouseX - mouseY
@@ -280,6 +282,24 @@ static JSValue mouseEvent(JSContext* ctx, JSValueConst this_val, int argc, JSVal
 
 auto JSManager::registerImGuiMouseHandle() -> void {
 	auto _ = NativeListenEvent("onMouseHandle", mouseEvent, "mouseDownEvent");
+}
+
+static JSValue citick_ctx;
+static JSValue CIEvent(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+	registerCoreWindowEventHandle();
+	ModManager::getInstance()->runinModThread([&]() {
+		NativeRemoveEvent("onCoreWindowThreadOneCall", citick_ctx);
+	});
+	return JS_UNDEFINED;
+}
+
+auto JSManager::initJSManager()->void {
+	citick_ctx = NativeListenEvent("onCoreWindowThreadOneCall", CIEvent, "CIEvent");
+}
+
+//void unregisterCoreWindowEventHandle();
+auto JSManager::disableJSManager() -> void {
+	unregisterCoreWindowEventHandle();
 }
 
 

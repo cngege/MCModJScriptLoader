@@ -4,6 +4,7 @@
 #include <string>
 #include <array>
 
+
 class JSManager {
 public:
 	static JSManager* getInstance();
@@ -31,7 +32,11 @@ public:
 	auto onImGuiRenderScriptSig() -> void;
 	// 存粹的外部ImGui渲染
 	auto onImGuiRender() -> void;
+	// 使用事件系统注册一个事件，时JS的鼠标Hook能传递到程序中
 	auto registerImGuiMouseHandle() -> void;
+
+	auto initJSManager()->void;
+	auto disableJSManager() -> void;
 
 private:
 	JSContext* m_ctx = nullptr;

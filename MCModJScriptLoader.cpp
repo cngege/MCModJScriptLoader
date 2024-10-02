@@ -77,7 +77,7 @@ static void BedrockLogOutHook(UINT type, const char* fmt, ...) {
 
 static JSRuntime* rt = nullptr;
 static JSContext* ctx = nullptr;
-auto stop() -> void;
+auto stop(HMODULE) -> void;
 auto test() -> void;
 
 static auto start(HMODULE hModule) -> void {
@@ -161,6 +161,7 @@ static auto start(HMODULE hModule) -> void {
 	ctx = JS_NewContext(rt);
 	js_std_init_handlers(rt);
 	JSManager::getInstance()->setctx(ctx);
+	JSManager::getInstance()->initJSManager();
 
 	// 开启BigNumber
 	//JS_AddIntrinsicBigFloat(ctx);
@@ -183,12 +184,12 @@ static auto start(HMODULE hModule) -> void {
 	JSManager::getInstance()->runstdLoop();					// 耗时操作， 跑完JS队列， 使 setTimeout工作
 	test();
 	ModManager::getInstance()->loopback();	// 循环等待卸载
-	stop();
+	stop(hModule);
 	Sleep(100);
 	::FreeLibraryAndExitThread(hModule, 0);		//只能退出 CreateThread 创建的线程
 }
 
-static auto stop()->void {
+static auto stop(HMODULE hModule)->void {
 	try {
 		//卸载Hook
 		HookManager::disableAllHook();
@@ -204,6 +205,9 @@ static auto stop()->void {
 
 		// 释放模块资源
 		JSManager::getInstance()->freeNativeModule(rt);
+		JSManager::getInstance()->disableJSManager();
+
+		ModManager::getInstance()->disableMod((uintptr_t)hModule);
 
 		// JS释放
 		JS_FreeContext(ctx);
@@ -217,9 +221,9 @@ static auto stop()->void {
 
 // Dll入口函数
 auto APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) -> BOOL {
+	DisableThreadLibraryCalls(hModule);//应用程序及其DLL的线程创建与销毁不再对此DLL进行通知
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
 		CreateThread(nullptr, NULL, (LPTHREAD_START_ROUTINE)start, hModule, NULL, nullptr);
-		DisableThreadLibraryCalls(hModule);                                     //应用程序及其DLL的线程创建与销毁不再对此DLL进行通知
     }
 	//FreeLibrary()
     else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
@@ -230,14 +234,14 @@ auto APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserv
 }
 
 void test() {
-	//48 83 EC ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 44 24 ? 83 3D 26
-	uintptr_t tif = ModManager::getModuleBase("TextInputFramework.dll");
-	uintptr_t fun = (uintptr_t)GetProcAddress((HMODULE)tif, "TextInputHostGetCurrent");
-	fun = tif + 0xBE740;
-	int a1 = 0;
-	void* ret = reinterpret_cast<void* (__fastcall*)()>(fun)();
-	spdlog::info("test - fun call  retaddr: {}", (void*)ret);
+	//auto core = *(CoreWindow*)ModManager::getCoreWindow();
+	//spdlog::warn("Text CoreWindow Ptr: {} v: {}", (void*)core, *(void**)core);
+	//auto keyd = TypedEventHandler<CoreWindow, IKeyEventArgs>(&keydown);
+	//core->KeyDown(TypedEventHandler<CoreWindow, KeyEventArgs>(&keydown));
+	//auto pos = core.PointerPosition();
+	//spdlog::warn("X:{}, Y:{}", pos.X, pos.Y);
 }
+
 
 /*
 * https://cloud.tencent.com/developer/article/1879884
@@ -251,39 +255,12 @@ JS_ThrowInternalError  该错误在JS引擎内部发生，特别是当它有太�
 
 */
 
-/*
-// #include <windows.h>
-#include <winrt/Windows.Foundation.h>
-#include <winrt/Windows.Foundation.Collections.h>
-#include <winrt/Windows.ApplicationModel.Core.h>
-#include <winrt/Windows.Graphics.Display.h>
-#include <winrt/Windows.UI.Core.h>
-#include <winrt/Windows.UI.Input.h>
-
-using namespace winrt;
-using namespace Windows;
-using namespace Windows::ApplicationModel::Core;
-using namespace Windows::Foundation::Numerics;
-using namespace Windows::Graphics::Display;
-using namespace Windows::UI;
-using namespace Windows::UI::Core;
-
-void x() {
-	CoreWindow window = CoreWindow::GetForCurrentThread();
-
-	
-	
-}
-
-
+/* 如何获取CoreWindow 单例
+* [*]  命名空间：#include <winrt/windows.ui.core.h> | using namespace winrt::Windows::UI::Core; | CoreWindow
+* 原理 在鼠标按键事件回调中 调用 CoreWindow::GetForCurrentThread()， 获取 CoreWindow 对象单例
+* - 使用&取存储的引用地址，得到后在使用*取值转为地址，则得到一个地址即 CoreWindow 对象的地址
+* - 在CE中搜索这个地址，则在下面能得到 Minecraft.Windows.exe + XXXX 的静态地址, 则找到了Minecraft for UWP 的 CoreWindow 对象
+*
 */
-
-
-
-
-
-
-
-
 
 
