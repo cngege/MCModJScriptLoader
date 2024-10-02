@@ -35,16 +35,18 @@ add_subdirectory(hook)
 add_subdirectory(jsClass)
 add_subdirectory(include)
 
+set(GITPROXY_HEADER https://ghproxy.cn/https://)
 if(DEFINED GitHubActions)
 	set(LIBSSL_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libssl.lib)
 	set(CRYPTO_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libcrypto.lib)
+	set(WINRT_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.2/cppwinrt_fast_forwarder.lib)
 else()
-	set(LIBSSL_URL https://gh.ddlc.top/https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libssl.lib)
-	set(CRYPTO_URL https://gh.ddlc.top/https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libcrypto.lib)
+	set(LIBSSL_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libssl.lib)
+	set(CRYPTO_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libcrypto.lib)
+	set(WINRT_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.2/cppwinrt_fast_forwarder.lib)
 endif()
 
-# 下载libssl.lib
-SET(DOWNLOAD_OPENSSL_TIMEOUT 300 CACHE STRING "Timeout in seconds when downloading openssl_lib.")
+# 新建openssl文件夹
 FIND_FILE(LOCAL_OPENSSL_LIBRARIES_PATH
 	NAMES ""
 	HINTS "lib/openssl"
@@ -58,7 +60,6 @@ endif()
 # /////////////////////////////////////ssl库lib名称////////////////////////////////////////////////
 SET(OPENSSL_SSL_NAME "libssl.lib")
 # ssl远程下载地址
-SET(SSL_DOWNLOAD_URL ${LIBSSL_URL})
 MESSAGE(STATUS "Checking ${OPENSSL_SSL_NAME}...")
 # 判断库文件是否已经存在
 FIND_FILE(LOCAL_OPENSSL_SSL_LIB
@@ -72,7 +73,7 @@ IF(NOT LOCAL_OPENSSL_SSL_LIB)
 		# 从设定的 URL 地址下载相应的压缩包
 	FILE(DOWNLOAD ${LIBSSL_URL}
 		${LOCAL_OPENSSL_LIBRARIES_PATH}/${OPENSSL_SSL_NAME}
-		TIMEOUT ${DOWNLOAD_OPENSSL_TIMEOUT}
+		TIMEOUT 300 CACHE STRING "Timeout in seconds when downloading ${OPENSSL_SSL_NAME}"
 		STATUS ERR
 		SHOW_PROGRESS)
 	# 判断下载是否存在错误
@@ -96,7 +97,6 @@ ENDIF()
 # /////////////////////////////////////crypto库lib名称////////////////////////////////////////////////
 SET(OPENSSL_CRYPTO_NAME "libcrypto.lib")
 # ssl远程下载地址
-SET(CRYPTO_DOWNLOAD_URL ${CRYPTO_URL})
 MESSAGE(STATUS "Checking ${OPENSSL_CRYPTO_NAME}...")
 # 判断库文件是否已经存在
 FIND_FILE(LOCAL_OPENSSL_CRYPTO_LIB
@@ -110,7 +110,7 @@ IF(NOT LOCAL_OPENSSL_CRYPTO_LIB)
 		# 从设定的 URL 地址下载相应的压缩包
 	FILE(DOWNLOAD ${CRYPTO_URL}
 		${LOCAL_OPENSSL_LIBRARIES_PATH}/${OPENSSL_CRYPTO_NAME}
-		TIMEOUT ${DOWNLOAD_OPENSSL_TIMEOUT}
+		TIMEOUT 300 CACHE STRING "Timeout in seconds when downloading ${OPENSSL_CRYPTO_NAME}."
 		STATUS ERR
 		SHOW_PROGRESS)
 	# 判断下载是否存在错误
@@ -134,7 +134,59 @@ ENDIF()
 # 包含 openssl 的头文件
 include_directories(include/openssl)
 
-# 链接OpenSSL库  
+
+# 新建cppwinrt文件夹
+FIND_FILE(LOCAL_WINRT_LIBRARIES_PATH
+	NAMES ""
+	HINTS "lib/cppwinrt"
+	NO_DEFAULT_PATH)
+if(NOT EXISTS "lib/cppwinrt")
+	file(MAKE_DIRECTORY "lib/cppwinrt")
+	SET(LOCAL_WINRT_LIBRARIES_PATH "lib/cppwinrt")
+	MESSAGE(STATUS "Folder “lib/cppwinrt” created successfully.")
+endif()
+
+
+# /////////////////////////////////////winrt库lib名称////////////////////////////////////////////////
+SET(WINRT_NAME "cppwinrt.lib")
+# ssl远程下载地址
+MESSAGE(STATUS "Checking ${WINRT_NAME}...")
+# 判断库文件是否已经存在
+FIND_FILE(LOCAL_WINRT_LIB
+	NAMES ${WINRT_NAME}
+	HINTS "${PROJECT_SOURCE_DIR}/lib/cppwinrt"
+	NO_DEFAULT_PATH)
+MESSAGE(STATUS "Checking url link ${WINRT_URL} ...")
+# 如果路径下没有目标文件
+IF(NOT LOCAL_WINRT_LIB)
+	MESSAGE(STATUS "Downloading ${WINRT_NAME} to ${LOCAL_WINRT_LIBRARIES_PATH} ...")
+		# 从设定的 URL 地址下载相应的压缩包
+	FILE(DOWNLOAD ${WINRT_URL}
+		${LOCAL_WINRT_LIBRARIES_PATH}/${WINRT_NAME}
+		TIMEOUT 300 CACHE STRING "Timeout in seconds when downloading ${WINRT_NAME}."
+		STATUS ERR
+		SHOW_PROGRESS)
+	# 判断下载是否存在错误
+	IF(ERR EQUAL 0)
+		# 如果下载无错误则设置压缩包名称标记下载成功
+		SET(LOCAL_WINRT_LIB "${LOCAL_WINRT_LIBRARIES_PATH}/${WINRT_NAME}")
+	#下载错误输出相关的提示信息
+	ELSE()
+		FILE(REMOVE ${LOCAL_WINRT_LIBRARIES_PATH}/${WINRT_NAME})
+		MESSAGE(STATUS "Download failed, error: ${ERR}")
+		MESSAGE(FATAL_ERROR
+		"You can try downloading ${WINRT_URL} manually"
+		"using curl/wget or a similar tool")
+	ENDIF()
+ENDIF()
+# 如果路径下存在压缩文件
+IF(LOCAL_WINRT_LIB)
+	MESSAGE(STATUS "Checking the direction of ${LOCAL_WINRT_LIBRARIES_PATH}/${WINRT_NAME}")
+ENDIF()
+
+
+
+# 链接相关库  
 target_link_libraries(MCModJScriptLoader PRIVATE
 	${CMAKE_SOURCE_DIR}/lib/openssl/libssl.lib
 	${CMAKE_SOURCE_DIR}/lib/openssl/libcrypto.lib
@@ -142,11 +194,12 @@ target_link_libraries(MCModJScriptLoader PRIVATE
 	${CMAKE_SOURCE_DIR}/lib/dyncall/dyncall_s.lib
 	${CMAKE_SOURCE_DIR}/lib/dyncall/dyncallback_s.lib
 	${CMAKE_SOURCE_DIR}/lib/dyncall/dynload_s.lib
+	${CMAKE_SOURCE_DIR}/lib/cppwinrt/cppwinrt.lib
 )
-
+# cppwinrt_fast_forwarder.lib 来自"https://www.nuget.org/packages/Microsoft.Windows.CppWinRT/#usedby-body-tab" 右侧 Download package, 解压后lib
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET MCModJScriptLoader PROPERTY CXX_STANDARD 20)
 endif()
 
-# TODO: 如有需要，请添加测试并安装目标。
+
