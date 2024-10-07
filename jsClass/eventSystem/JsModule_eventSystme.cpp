@@ -118,9 +118,9 @@ static JSValue js_broadcastEvent(JSContext* ctx, JSValueConst this_val, int argc
 
 static const JSCFunctionListEntry js_eventSys_funcs[] = {
 	//JS_CFUNC_DEF("Get", 1, js_http_get_request),
-	 { "listenEvent", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_listenEvent } } } },
-	 { "removeEvent", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_removeEvent } } } },
-	 { "broadcastEvent", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_broadcastEvent}}}},
+		JS_CFUNC_DEF2("listenEvent", 1, js_listenEvent),
+		JS_CFUNC_DEF2("removeEvent", 1, js_removeEvent),
+		JS_CFUNC_DEF2("broadcastEvent", 1, js_broadcastEvent),
 };
 
 static int js_eventSys_init(JSContext* ctx, JSModuleDef* m) {
