@@ -234,7 +234,9 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		
 		// 然后调用JS中的CALL
 		auto ret = JS_Call(ctx, userData->hookFun, JS_GetGlobalObject(ctx), static_cast<int>(paras.size()), paras.data());
-		
+		for(int i = 0; i < paras.size(); ++i) {
+			JS_FreeValue(ctx, paras[i]);
+		}
 
 		// 然后返回值类型去解析返回值，将返回值写入到 result 返回
 		switch(userData->agreeOn[0]) {
