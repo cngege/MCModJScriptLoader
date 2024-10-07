@@ -1,4 +1,5 @@
 ﻿#include "../JSManager.h"
+#include "class/imguiclass.h"
 #include "../client/ModManager.h"
 #include "imgui/imgui.h"
 #include "imgui_toggle/imgui_toggle.h"
@@ -269,6 +270,13 @@ static JSValue js_imgui_SliderInt(JSContext* ctx, JSValueConst this_val, int arg
 }
 
 
+static JSValue js_imgui_GetForegroundDrawList(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+	ImDrawList* draw = ImGui::GetForegroundDrawList();
+	
+	JSValue obj = JS_NewObjectClass(ctx, JSForegroundDrawList::getForegroundDrawListID());
+	JS_SetOpaque(obj, draw);
+	return obj;
+}
 
 
 
@@ -282,19 +290,22 @@ static JSValue js_imgui_SliderInt(JSContext* ctx, JSValueConst this_val, int arg
 
 static const JSCFunctionListEntry js_imgui_funcs[] = {
 	 //JS_CFUNC_DEF("Get", 1, js_imguiDemoWindow),
-	 { "ShowDemoWindow", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imguiDemoWindow } } } },
-	 { "Begin", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_imgui_Begin } } } },
-	 { "End", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imgui_End } } } },
-	 { "Text", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imgui_Text } } } },
-	 { "Button", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imgui_Button } } } },
-	 { "Checkbox", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imgui_Checkbox } } } },
-	 { "Toggle", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imgui_Toggle } } } },
-	 { "InputInt", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imgui_InputInt } } } },
-	 { "InputFloat", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imgui_InputFloat } } } },
-	 { "SliderInt", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 0, JS_CFUNC_generic,{ .generic = js_imgui_SliderInt } } } },
+		JS_CFUNC_DEF2("ShowDemoWindow", 0, js_imguiDemoWindow),
+		JS_CFUNC_DEF2("Begin", 0, js_imgui_Begin),
+		JS_CFUNC_DEF2("End", 0, js_imgui_End),
+		JS_CFUNC_DEF2("Text", 1, js_imgui_Text),
+		JS_CFUNC_DEF2("Button", 2, js_imgui_Button),
+		JS_CFUNC_DEF2("Checkbox", 2, js_imgui_Checkbox),
+		JS_CFUNC_DEF2("Toggle", 2, js_imgui_Toggle),
+		JS_CFUNC_DEF2("InputInt", 2, js_imgui_InputInt),
+		JS_CFUNC_DEF2("InputFloat", 2, js_imgui_InputFloat),
+		JS_CFUNC_DEF2("SliderInt", 4, js_imgui_SliderInt),
+		JS_CFUNC_DEF2("GetForegroundDrawList", 0, js_imgui_GetForegroundDrawList),
 };
 
 static int js_imgui_init(JSContext* ctx, JSModuleDef* m) {
+	imguiclass_init();
+
 	return JS_SetModuleExportList(ctx, m, js_imgui_funcs, _countof(js_imgui_funcs));
 }
 
