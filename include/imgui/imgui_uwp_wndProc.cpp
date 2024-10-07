@@ -37,7 +37,7 @@ void ImGui_ImplUWP_AddKeyEvent(ImGuiKey key, bool down, int native_keycode, int 
 }
 
 static bool IsVkDown(int vk) {
-	CoreVirtualKeyStates states = win.GetKeyState((VirtualKey)VK_CONTROL);
+	CoreVirtualKeyStates states = win.GetKeyState((VirtualKey)vk);
 	return states == CoreVirtualKeyStates::Down;
 }
 
@@ -294,6 +294,9 @@ void keydown(CoreWindow const& sender, KeyEventArgs const& args) {
 			if(!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU)) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
 		}
 	}
+	if(ImGui::GetIO().WantCaptureKeyboard) {	// 这里应该是指焦点在ImGui上, 可能不在输入框里
+		//args.Handled(true);
+	}
 }
 
 void keyup(CoreWindow const& sender, KeyEventArgs const& args) {
@@ -339,6 +342,9 @@ void keyup(CoreWindow const& sender, KeyEventArgs const& args) {
 			if(!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU)) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
 		}
 	}
+	if(ImGui::GetIO().WantCaptureKeyboard) {	// 这里应该是指焦点在ImGui上, 可能不在输入框里
+		//args.Handled(true);
+	}
 }
 
 unsigned short UTF32ToUTF16(UINT32 utf32) {
@@ -366,7 +372,9 @@ void characterReceived(CoreWindow const& sender, CharacterReceivedEventArgs cons
 
 	io.AddInputCharacterUTF16(UTF32ToUTF16(code));
 
-	return;
+	if(ImGui::GetIO().WantCaptureKeyboard) {	// 这里应该是指焦点在ImGui上, 可能不在输入框里
+		//args.Handled(true);
+	}
 }
 
 
@@ -397,7 +405,7 @@ void registerCoreWindowEventHandle() {
 	token_cookie_keydown = win.KeyDown(TypedEventHandler<CoreWindow, KeyEventArgs>(&keydown));
 	token_cookie_keyup = win.KeyUp(TypedEventHandler<CoreWindow, KeyEventArgs>(&keyup));
 	token_cookie_characterReceived = win.CharacterReceived(TypedEventHandler<CoreWindow, CharacterReceivedEventArgs>(&characterReceived));
-
+	//win.Activate();
 
 }
 
