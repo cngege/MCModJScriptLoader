@@ -216,7 +216,7 @@ static auto stop(HMODULE hModule)->void {
 		// spdlog shutdown
 		spdlog::shutdown();
 	}
-	catch(std::exception& _) {}
+	catch(std::exception&) {}
 }
 
 // Dll入口函数
