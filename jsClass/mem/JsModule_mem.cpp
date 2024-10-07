@@ -3,6 +3,8 @@
 
 #include "../../client/mem/mem.h"
 #include "../JSManager.h"
+#include "../nativePoint/nativePointClass.h"
+#include "../client/utils/hmath.h"
 
 static JSValue js_findSig(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
 	std::string module = "Minecraft.Windows.exe";
@@ -93,13 +95,43 @@ static JSValue js_getBoolValue(JSContext* ctx, JSValueConst this_val, int argc, 
 	return JS_NewBool(ctx, Mem::getValue<bool>((uintptr_t)ptr));
 }
 
+static JSValue js_WorldToScreen(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+	if(argc < 5) return JS_ThrowTypeError(ctx, "函数需要5个参数[glmatrixf*, vec3-ori, vec3-pos,vec2-fov,vec2-screensize]，当前参数个数：%d", argc);
+	auto _NativePoint = (nativePointClass*)JS_GetOpaque(argv[0], nativePointClass::id);
+	if(_NativePoint == nullptr) return JS_NULL;
+
+	glmatrixf* glm = (glmatrixf*)_NativePoint->get();
+	auto ori = JSTool::getPropXYZ(argv[1]);
+	if(!ori) return JS_ThrowTypeError(ctx, "参数2应包含属性 x,y,z");
+
+	auto pos = JSTool::getPropXYZ(argv[2]);
+	if(!pos) return JS_ThrowTypeError(ctx, "参数3应包含属性 x,y,z");
+
+	auto fov = JSTool::getPropXY(argv[3]);
+	if(!fov) return JS_ThrowTypeError(ctx, "参数4应包含属性 x,y");
+
+	auto screensize = JSTool::getPropXY(argv[4]);
+	if(!screensize) return JS_ThrowTypeError(ctx, "参数5应包含属性 x,y");
+	
+	vec2_t out = {};
+	if(glm->correct().OWorldToScreen({ ori->at(0),ori->at(1) ,ori->at(2) }, { pos->at(0),pos->at(1) ,pos->at(2) }, out, { fov->at(0),fov->at(1) }, { screensize->at(0),screensize->at(1) })) {
+		auto o = JS_NewObject(ctx);
+		JS_SetPropertyStr(ctx, o, "x", JS_NewFloat64(ctx, out.x));
+		JS_SetPropertyStr(ctx, o, "y", JS_NewFloat64(ctx, out.y));
+		return o;
+	}
+	else {
+		return JS_NULL;
+	}
+}
+
 static const JSCFunctionListEntry js_mem_funcs[] = {
-    //JS_CFUNC_DEF("Get", 1, js_http_get_request),
-	 { "findSig", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_findSig } } } },
-	 { "findSigRelay", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_findSigRelay } } } },
-	 { "getBase", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_getBase}}}},
-	 { "setBoolValue", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_setBoolValue } } } },
-	 { "getBoolValue", JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = { 1, JS_CFUNC_generic,{ .generic = js_getBoolValue } } } },
+	JS_CFUNC_DEF2("findSig", 1, js_findSig),
+	JS_CFUNC_DEF2("findSigRelay", 1, js_findSigRelay),
+	JS_CFUNC_DEF2("getBase", 0, js_getBase),
+	JS_CFUNC_DEF2("setBoolValue", 2, js_setBoolValue),
+	JS_CFUNC_DEF2("getBoolValue", 2, js_getBoolValue),
+	JS_CFUNC_DEF2("WorldToScreen", 2, js_WorldToScreen),
 };
 
 static int js_mem_init(JSContext* ctx, JSModuleDef* m) {
