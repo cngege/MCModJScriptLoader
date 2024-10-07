@@ -261,7 +261,6 @@ static JSValue mouseEvent(JSContext* ctx, JSValueConst this_val, int argc, JSVal
 					io.AddMouseButtonEvent(mousebutton-1, isDown);
 					break;
 				case 4:
-					//io.MouseWheel = isDown < 0 ? -0.5f : 0.5f; //For scrolling
 					io.AddMouseWheelEvent(0.f, isDown < 0 ? -1.f : 1.f);
 					break;
 				default:
@@ -284,17 +283,14 @@ auto JSManager::registerImGuiMouseHandle() -> void {
 	auto _ = NativeListenEvent("onMouseHandle", mouseEvent, "mouseDownEvent");
 }
 
-static JSValue citick_ctx;
-static JSValue CIEvent(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
-	registerCoreWindowEventHandle();
-	ModManager::getInstance()->runinModThread([&]() {
-		NativeRemoveEvent("onCoreWindowThreadOneCall", citick_ctx);
-	});
-	return JS_UNDEFINED;
-}
-
 auto JSManager::initJSManager()->void {
-	citick_ctx = NativeListenEvent("onCoreWindowThreadOneCall", CIEvent, "CIEvent");
+	static JSValue citick_ctx = NativeListenEvent("onCoreWindowThreadOneCall", [](JSContext * ctx, JSValueConst this_val, int argc, JSValueConst * argv)->JSValue {
+		registerCoreWindowEventHandle();
+		ModManager::getInstance()->runinModThread([&]() {
+			NativeRemoveEvent("onCoreWindowThreadOneCall", citick_ctx);
+		});
+		return JS_UNDEFINED;
+	}, "CIEvent");
 }
 
 //void unregisterCoreWindowEventHandle();
@@ -335,7 +331,7 @@ std::optional<float> JSTool::toFloat(JSValue jsv) {
 	if(value) {
 		fval = static_cast<float>(value.value());
 	}
-	return JSTool::toDouble(jsv);
+	return fval;
 }
 
 std::optional<double> JSTool::toDouble(JSValue jsv) {
@@ -359,6 +355,20 @@ std::optional<std::array<float,2>> JSTool::getPropXY(JSValue jsv) {
 		return ret;
 	}
 	ret = { static_cast<float>(x), static_cast<float>(y) };
+	return ret;
+}
+
+std::optional<std::array<float, 3>> JSTool::getPropXYZ(JSValue jsv) {
+	auto ctx = JSManager::getInstance()->getctx();
+	std::optional<std::array<float, 3>> ret;
+	JSValue xValue = JS_GetPropertyStr(ctx, jsv, "x");
+	JSValue yValue = JS_GetPropertyStr(ctx, jsv, "y");
+	JSValue zValue = JS_GetPropertyStr(ctx, jsv, "z");
+	double x, y, z;
+	if(!JS_IsNumber(xValue) || !JS_IsNumber(yValue) || !JS_IsNumber(zValue) || JS_ToFloat64(ctx, &x, xValue) < 0 || JS_ToFloat64(ctx, &y, yValue) < 0 || JS_ToFloat64(ctx, &z, zValue) < 0) {
+		return ret;
+	}
+	ret = { static_cast<float>(x), static_cast<float>(y), static_cast<float>(z) };
 	return ret;
 }
 
@@ -440,11 +450,11 @@ void JSTool::ReferenceValue(double v, JSValue jsv, const char* name) {
 JSValue JSTool::ReferenceValue(float* v, JSValue jsv, const char* name) {
 	auto ctx = JSManager::getInstance()->getctx();
 	std::string pname = name ? name : "float";
-	return JSTool::ReferenceValue((double*)v, jsv, pname.c_str());
+	return JSTool::ReferenceValue(reinterpret_cast<double*>(v), jsv, pname.c_str());
 }
 
 void JSTool::ReferenceValue(float v, JSValue jsv, const char* name) {
 	auto ctx = JSManager::getInstance()->getctx();
 	std::string pname = name ? name : "float";
-	JSTool::ReferenceValue((double)v, jsv, pname.c_str());
+	JSTool::ReferenceValue(static_cast<double>(v), jsv, pname.c_str());
 }

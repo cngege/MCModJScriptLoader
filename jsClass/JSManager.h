@@ -4,6 +4,13 @@
 #include <string>
 #include <array>
 
+#ifndef JS_CFUNC_DEF2
+#define JS_CFUNC_DEF2(name, length, func1)                                                                                              \
+    {                                                                                                                                  \
+        name, JS_PROP_WRITABLE | JS_PROP_CONFIGURABLE, JS_DEF_CFUNC, 0, {.func = {length, JS_CFUNC_generic, {.generic = func1}} }		\
+    }
+#endif // !JS_CFUNC_DEF2
+
 
 class JSManager {
 public:
@@ -49,7 +56,8 @@ public:
 	static std::optional<int32_t> toInt(JSValue);
 	static std::optional<float> toFloat(JSValue);
 	static std::optional<double> toDouble(JSValue);
-	static std::optional<std::array<float,2>> getPropXY(JSValue);
+	static std::optional<std::array<float, 2>> getPropXY(JSValue);
+	static std::optional<std::array<float, 3>> getPropXYZ(JSValue);
 
 
 	/**
