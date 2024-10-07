@@ -10,6 +10,9 @@ if (POLICY CMP0141)
 endif()
 add_compile_options(/utf-8)
 
+add_compile_options(/wd26498)
+
+
 if(CMAKE_BUILD_TYPE MATCHES Release)
 # release 下生成pdb
 	MESSAGE(STATUS "PDB - 当前在 RELEASE 模式下 生成pdb文件")
