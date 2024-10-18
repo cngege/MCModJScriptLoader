@@ -325,10 +325,24 @@ std::optional<int32_t> JSTool::toInt(JSValue jsv) {
 	return intval;
 }
 
+std::optional<int64_t> JSTool::toInt64(JSValue jsv) {
+	auto ctx = JSManager::getInstance()->getctx();
+	std::optional<int64_t> intval;
+	INT64 value;
+	if(!JS_IsNumber(jsv) || JS_ToInt64(ctx, &value, jsv) < 0) {
+		return intval;
+	}
+	intval = value;
+	return intval;
+}
+
 std::optional<float> JSTool::toFloat(JSValue jsv) {
 	std::optional<float> fval;
 	auto value = JSTool::toDouble(jsv);
 	if(value) {
+		if(*value > std::numeric_limits<float>::max()) {
+			return fval;
+		}
 		fval = static_cast<float>(value.value());
 	}
 	return fval;

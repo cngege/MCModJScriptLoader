@@ -54,6 +54,7 @@ class JSTool {
 public:
 	static std::optional<std::string> toString(JSValue);
 	static std::optional<int32_t> toInt(JSValue);
+	static std::optional<int64_t> toInt64(JSValue);
 	static std::optional<float> toFloat(JSValue);
 	static std::optional<double> toDouble(JSValue);
 	static std::optional<std::array<float, 2>> getPropXY(JSValue);
