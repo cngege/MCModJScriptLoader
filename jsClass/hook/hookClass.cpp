@@ -223,7 +223,6 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 			case NativeTypes::Pointer:
 			{
 				uintptr_t point = (uintptr_t)dcbArgPointer(args);
-				//paras.emplace_back(nativePointClass::newNativePoint((uintptr_t)dcbArgPointer(args)));
 				paras.emplace_back(nativePointClass::newNativePoint(point));
 			}
 				break;
@@ -237,6 +236,7 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		for(int i = 0; i < paras.size(); ++i) {
 			JS_FreeValue(ctx, paras[i]);
 		}
+		paras.clear();
 
 		// 然后返回值类型去解析返回值，将返回值写入到 result 返回
 		switch(userData->agreeOn[0]) {
@@ -374,7 +374,6 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
 		spdlog::error(e.what());
 		spdlog::error("错误发生在-函数：{}，文件：{}:", __FUNCTION__, __FILE__,__LINE__);
 	}
-
 	return hookClass::getTypeSignature(userData->agreeOn[0]);
 }
 
