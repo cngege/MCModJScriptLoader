@@ -365,7 +365,7 @@ JSValue nativePointClass::getCstring(JSContext* ctx, JSValueConst newTarget, int
 ////////////////////////////// CALL /////////////////////////////////
 JSValue nativePointClass::call(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
-	JSValue ret{};
+	JSValue ret = JS_UNDEFINED;
 	try {
 		auto ori = (void*)thi->m_ptr;
 		dcReset(thi->m_vm);
@@ -379,87 +379,65 @@ JSValue nativePointClass::call(JSContext* ctx, JSValueConst newTarget, int argc,
 			case NativeTypes::Char:
 			case NativeTypes::UnsignedChar:
 			{
-				int32_t value = 0;
-				if(JS_ToInt32(ctx, &value, argv[i - 1]) < 0) {
-					throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedChar(Char))解析失败");
-				}
-				dcArgChar(thi->m_vm, value);
+				auto v = JSTool::toInt(argv[i - 1]);
+				if(!v) throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedChar(Char))解析失败");
+				dcArgChar(thi->m_vm, *v);
 			}
 			break;
 			case NativeTypes::Short:
 			case NativeTypes::UnsignedShort:
 			{
-				int32_t value = 0;
-				if(JS_ToInt32(ctx, &value, argv[i - 1]) < 0) {
-					throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedShort(Short))解析失败");
-				}
-				dcArgShort(thi->m_vm, value);
+				auto v = JSTool::toInt(argv[i - 1]);
+				if(!v) throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedShort(Short))解析失败");
+				dcArgShort(thi->m_vm, *v);
 			}
 			break;
 			case NativeTypes::Int:
 			case NativeTypes::UnsignedInt:
 			{
-				int32_t value = 0;
-				if(JS_ToInt32(ctx, &value, argv[i - 1]) < 0) {
-					throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedInt(Int))解析失败");
-				}
-				dcArgInt(thi->m_vm, value);
+				auto v = JSTool::toInt(argv[i - 1]);
+				if(!v) throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedInt(Int))解析失败");
+				dcArgInt(thi->m_vm, *v);
 			}
 			break;
 			case NativeTypes::Long:
 			case NativeTypes::UnsignedLong:
 			{
-				int32_t value = 0;
-				if(JS_ToInt32(ctx, &value, argv[i - 1]) < 0) {
-					throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedLong(Long))解析失败");
-				}
-				dcArgLong(thi->m_vm, value);
+				auto v = JSTool::toInt(argv[i - 1]);
+				if(!v) throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedLong(Long))解析失败");
+				dcArgLong(thi->m_vm, *v);
 			}
 			break;
 			case NativeTypes::LongLong:
 			case NativeTypes::UnsignedLongLong:
 			{
-				int64_t value64 = 0;
-				if(JS_ToInt64(ctx, &value64, argv[i - 1]) < 0) {
-					throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedLongLong(LongLong))解析失败");
-				}
-				dcArgLongLong(thi->m_vm, value64);
+				auto v = JSTool::toInt64(argv[i - 1]);
+				if(!v) throw std::runtime_error("NativePoint.call(NativeTypes::UnsignedLongLong(LongLong))解析失败");
+				dcArgLongLong(thi->m_vm, *v);
 			}
 			break;
 			case NativeTypes::Float:
 			{
-				double valuef = 0;
-				if(JS_ToFloat64(ctx, &valuef, argv[i - 1]) < 0) {
-					throw std::runtime_error("NativePoint.call(NativeTypes::Float)解析失败");
-				}
-				if(valuef > std::numeric_limits<float>::max()) {
-					spdlog::warn("NativePoint.call(NativeTypes::Float)解析时发现值大于float最大值：{}", valuef);
-				}
-				dcArgFloat(thi->m_vm, static_cast<DCfloat>(valuef));
+				auto v = JSTool::toFloat(argv[i - 1]);
+				if(!v) throw std::runtime_error("NativePoint.call(NativeTypes::Float)解析失败，或者值超出范围");
+				dcArgFloat(thi->m_vm, *v);
 			}
 			break;
 			case NativeTypes::Double:
 			{
-				double valued = 0;
-				if(JS_ToFloat64(ctx, &valued, argv[i - 1]) < 0) {
-					throw std::runtime_error("NativePoint.call(NativeTypes::Double)解析失败");
-				}
-				dcArgDouble(thi->m_vm, valued);
+				auto v = JSTool::toDouble(argv[i - 1]);
+				if(!v) throw std::runtime_error("NativePoint.call(NativeTypes::Double)解析失败");
+				dcArgDouble(thi->m_vm, *v);
 			}
 			break;
 			case NativeTypes::Pointer:
 			{
-				//int64_t valuepoint = 0;
-				//if(JS_ToInt64(ctx, &valuepoint, argv[i - 1]) < 0) {
-				//	throw std::runtime_error("NativePoint.call(NativeTypes::Pointer)解析失败");
-				//}
-				//dcArgPointer(thi->m_vm, (void*)valuepoint);
-
 				nativePointClass* thii = (nativePointClass*)JS_GetOpaque(argv[i - 1], nativePointClass::id);
-				dcArgPointer(thi->m_vm, (thii == 0) ? 0 : (void*)(thii->get()));
+				dcArgPointer(thi->m_vm, (thii == nullptr) ? 0 : (void*)(thii->get()));
 			}
 			break;
 			default:
+				spdlog::error("函数参数类型列表中出现非法类型");
 				break;
 			}
 		}
@@ -528,7 +506,6 @@ JSValue nativePointClass::call(JSContext* ctx, JSValueConst newTarget, int argc,
 		case NativeTypes::Void:
 		{
 			dcCallVoid(thi->m_vm, ori);
-			ret = JS_UNDEFINED;
 		}
 		break;
 		default:
@@ -544,7 +521,6 @@ JSValue nativePointClass::call(JSContext* ctx, JSValueConst newTarget, int argc,
 	catch(std::exception& e) {
 		spdlog::error(e.what());
 		spdlog::error("错误发生在-函数：{}，文件：{}", __FUNCTION__, __FILE__);
-		throw e;
 	}
 
 
