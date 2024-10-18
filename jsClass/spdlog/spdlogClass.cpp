@@ -60,7 +60,7 @@ JSValue spdlogClass::info(JSContext* ctx, JSValueConst thisVal, int argc, JSValu
 		JS_FreeCString(ctx, str);
 	}
 	spdlog::info(allstr);
-	return JS_UNINITIALIZED;
+	return JS_UNDEFINED;
 }
 
 JSValue spdlogClass::warn(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
@@ -74,7 +74,7 @@ JSValue spdlogClass::warn(JSContext* ctx, JSValueConst thisVal, int argc, JSValu
 		JS_FreeCString(ctx, str);
 	}
 	spdlog::warn(allstr);
-	return JS_UNINITIALIZED;
+	return JS_UNDEFINED;
 }
 
 JSValue spdlogClass::error(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
@@ -88,7 +88,7 @@ JSValue spdlogClass::error(JSContext* ctx, JSValueConst thisVal, int argc, JSVal
 		JS_FreeCString(ctx, str);
 	}
 	spdlog::error(allstr);
-	return JS_UNINITIALIZED;
+	return JS_UNDEFINED;
 }
 
 JSValue spdlogClass::debug(JSContext* ctx, JSValueConst thisVal, int argc, JSValueConst* argv) {
@@ -102,6 +102,6 @@ JSValue spdlogClass::debug(JSContext* ctx, JSValueConst thisVal, int argc, JSVal
 		JS_FreeCString(ctx, str);
 	}
 	spdlog::debug(allstr);
-	return JS_UNINITIALIZED;
+	return JS_UNDEFINED;
 }
 
