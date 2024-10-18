@@ -30,6 +30,7 @@ static JSValue js_imgui__ForegroundDrawList_AddLine(JSContext* ctx, JSValueConst
 	float thickness = 1.f;
 	if(argc >= 4) {
 		auto _thickness = JSTool::toFloat(argv[3]);
+		if(!_thickness) return JS_ThrowTypeError(ctx, "参数4需要Float");
 		if(_thickness) thickness = *_thickness;
 	}
 	
