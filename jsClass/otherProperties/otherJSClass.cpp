@@ -39,6 +39,7 @@ JSValue thread_sleep(JSContext* ctx, JSValueConst newTarget, int argc, JSValueCo
 			return JS_ThrowTypeError(ctx, "参数1请传入一个合法的Number");
 		}
 		if(sleepTime > 0) std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
+		return JS_UNDEFINED;
 	}
 	return JS_ThrowTypeError(ctx, "至少需要1个参数,类型为[Number]");
 }
@@ -54,7 +55,7 @@ void otherJSClass::Reg() {
 	auto ctx = JSManager::getInstance()->getctx();
 	JSValue obj = JS_GetGlobalObject(ctx);
 	JS_SetPropertyStr(ctx, obj, "createThread", JS_NewCFunction(ctx, createThread, "createThread", 2));
-	JS_SetPropertyStr(ctx, obj, "threadSleep", JS_NewCFunction(ctx, createThread, "threadSleep", 1));
+	JS_SetPropertyStr(ctx, obj, "threadSleep", JS_NewCFunction(ctx, thread_sleep, "threadSleep", 1));
 	JS_SetPropertyStr(ctx, obj, "testDumpValue", JS_NewCFunction(ctx, testDumpValue, "testDumpValue", 1));
 	JS_FreeValue(ctx, obj);
 }
