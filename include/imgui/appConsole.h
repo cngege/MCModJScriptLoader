@@ -135,6 +135,8 @@ struct ExampleAppConsole
             for(const char* item : Items) {
                 if(!Filter.PassFilter(item))
                     continue;
+                if(item == nullptr) // Items 内容太多时会导致 item变为null
+                    continue;
 
                 // Normally you would store more information in your item than just a string.
                 // (e.g. make Items[] an array of structure, store color/type etc.)
