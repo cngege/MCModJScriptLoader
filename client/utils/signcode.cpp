@@ -39,7 +39,7 @@ void SignCode::AddSign(const char* sign, std::function<uintptr_t(uintptr_t)> han
 	if(success) return;
 	v = Mem::findSig(sign);
 	if(!v) {
-		spdlog::error("SignCode Warn: {} 特征码查找失败({})", this->_printTitle, this->findCount);
+		spdlog::warn("SignCode Warn: {} 特征码查找失败({})", this->_printTitle, this->findCount);
 	}
 	else {
 		success = true;
@@ -60,7 +60,7 @@ void SignCode::AddSignCall(const char* sign, int offset, std::function<uintptr_t
 	if(success) return;
 	auto _v = Mem::findSig(sign);
 	if(!_v) {
-		spdlog::error("SignCode Warn: {} 特征码查找失败({})", this->_printTitle, this->findCount);
+		spdlog::warn("SignCode Warn: {} 特征码查找失败({})", this->_printTitle, this->findCount);
 	}
 	else {
 		success = true;
