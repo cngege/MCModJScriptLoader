@@ -145,14 +145,14 @@ static auto start(HMODULE hModule) -> void {
 	// BedrockLogOut 函数定位 内部有字符串 "!!! ERROR: Unable to format log output message !!!"
 	{
 		SignCode sign("BedrockLogOut");
-		sign << "48 89 54 24 ? 4C 89 44 24 ? 4C 89 4C 24 ? 55 53 56 57 41 56 41 57 48";
-		sign.AddSignCall("15 ? ? ? ? 41 8B CE E8", 9);
+		sign << "48 89 54 24 ? 4C 89 44 24 ? 4C 89 4C 24 ? 55 53 56 57 41 54 41 56 41 57 48";
+		sign.AddSignCall("47 ? ? 48 8D 15 ? ? ? ? 41 8B ? E8", 14);
 		if(sign) {
 			gamelogger_info = HookManager::addHook(*sign, (void*)&BedrockLogOutHook);
 			gamelogger_info->hook();
 		}
 		else {
-			spdlog::warn("gamelogger Hook fail. in {}", __FUNCTION__);
+			spdlog::warn("gamelogger Hook fail. in fun:{}", __FUNCTION__);
 		}
 	}
 
