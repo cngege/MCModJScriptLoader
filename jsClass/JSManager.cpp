@@ -154,7 +154,7 @@ auto JSManager::onJsLoadBefore(const std::string name, JSValue& jsv) -> void {
     JS_SetPropertyStr(m_ctx, jsv, "__模块__", sigobj);
     std::unique_lock<std::shared_mutex> lock(rw_mtx_modulesigList);
     modulesig_map[name] = JS_DupValue(m_ctx, sigobj);
-    JS_FreeValue(m_ctx, sigobj);
+    //JS_FreeValue(m_ctx, sigobj);
 }
 
 // 在JS执行之后处理this对象 比如拿到某某函数再执行
