@@ -34,3 +34,6 @@
 #.vs
 .vs/
 out/
+
+#Example
+Example/*/.vscode/
