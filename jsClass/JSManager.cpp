@@ -138,6 +138,7 @@ static JSValue JSImConsoleWindow(JSContext* ctx, JSValueConst newTarget, int arg
         return JS_ThrowTypeError(ctx, "只能接受一个bool类型参数");
     }
     GetImguiConsole()->MainOpen = (bool)JS_ToBool(ctx, argv[0]);
+    return JS_UNDEFINED;
 }
 
 

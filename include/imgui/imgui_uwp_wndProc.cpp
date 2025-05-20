@@ -49,7 +49,7 @@ void ImGui_ImplUWP_AddKeyEvent(ImGuiKey key, bool down, int native_keycode, int 
 }
 
 static bool IsVkDown(int vk) {
-    CoreVirtualKeyStates states = win.GetKeyState((VirtualKey)vk);
+    CoreVirtualKeyStates states = win.GetKeyState(static_cast<VirtualKey>(vk)) & CoreVirtualKeyStates::Down;
     return states == CoreVirtualKeyStates::Down;
 }
 

@@ -70,14 +70,15 @@ struct ExampleAppConsole
     }
 
     void Draw(const char* title) {
-        //if(ImGui::IsKeyChordPressed(ImGuiKey_ModCtrl | ImGuiKey::ImGuiKey_Insert)) {
-
-        //}
+        if(ImGui::IsKeyChordPressed(ImGuiKey_ModCtrl | ImGuiKey::ImGuiKey_Insert)) {
+            MainOpen = !MainOpen;
+        }
 
         if(ShowDemoWindow) {
             ImGui::ShowDemoWindow(&ShowDemoWindow);
         }
 
+        if(!MainOpen) return;
         ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
         if(!ImGui::Begin(title, &MainOpen)) {
             ImGui::End();

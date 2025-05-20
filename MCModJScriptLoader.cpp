@@ -30,48 +30,48 @@
 #include "jsClass/nativePoint/nativePointClass.h"
 
 static JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, void* opaque) {
-	if(std::string(module_name).ends_with(".js") || std::string(module_name).ends_with(".ts")) {
-		return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string());
-	}
-	else {
-		return js_module_loader(ctx, module_name, opaque);
-	}
+    if(std::string(module_name).ends_with(".js") || std::string(module_name).ends_with(".ts")) {
+        return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string());
+    }
+    else {
+        return js_module_loader(ctx, module_name, opaque);
+    }
 }
 
 //BedrockLogOut
 uintptr_t gamelogger_ori = 0;
 HookInstance* gamelogger_info = nullptr;
 static void BedrockLogOutHook(UINT type, const char* fmt, ...) {
-	try {
-		va_list va;
-		va_start(va, fmt);
-		char tn[0x1000];
-		memset(tn, '\0', 0x1000);
-		vsnprintf(tn, sizeof(tn) - 1, fmt, va);
-		if(tn[strlen(tn) - 1] == '\n') {
-			tn[strlen(tn) - 1] = '\0';
-		}
-		switch(type) {
-		case 1:
-			spdlog::debug(tn);
-			break;
-		case 2:
-			spdlog::info(tn);
-			break;
-		case 8:
-			spdlog::error(tn);
-			break;
-		case 4:
-		default:
-			spdlog::warn(tn);
-			break;
-		}
-		reinterpret_cast<void(__fastcall*)(UINT, va_list)>(gamelogger_info->origin)(type, va);
-		va_end(va);
-	}
-	catch(...) {
-		spdlog::error("游戏内部日志输出错误...");
-	}
+    try {
+        va_list va;
+        va_start(va, fmt);
+        char tn[0x1000];
+        memset(tn, '\0', 0x1000);
+        vsnprintf(tn, sizeof(tn) - 1, fmt, va);
+        if(tn[strlen(tn) - 1] == '\n') {
+            tn[strlen(tn) - 1] = '\0';
+        }
+        switch(type) {
+        case 1:
+            spdlog::debug(tn);
+            break;
+        case 2:
+            spdlog::info(tn);
+            break;
+        case 8:
+            spdlog::error(tn);
+            break;
+        case 4:
+        default:
+            spdlog::warn(tn);
+            break;
+        }
+        reinterpret_cast<void(__fastcall*)(UINT, va_list)>(gamelogger_info->origin)(type, va);
+        va_end(va);
+    }
+    catch(...) {
+        spdlog::error("游戏内部日志输出错误...");
+    }
 }
 
 
@@ -81,165 +81,165 @@ auto stop(HMODULE) -> void;
 auto test() -> void;
 
 static auto start(HMODULE hModule) -> void {
-	char* localAppData = nullptr;
-	size_t localsize = 0;
-	_dupenv_s(&localAppData, &localsize, "LOCALAPPDATA");
-	if(localAppData == nullptr) {
-		throw std::runtime_error("取环境变量 LOCALAPPDATA 失败");
-		return;
-	}
+    char* localAppData = nullptr;
+    size_t localsize = 0;
+    _dupenv_s(&localAppData, &localsize, "LOCALAPPDATA");
+    if(localAppData == nullptr) {
+        throw std::runtime_error("取环境变量 LOCALAPPDATA 失败");
+        return;
+    }
     //const char* local = getenv("LOCALAPPDATA");//C:\Users\CNGEGE\AppData\Local\Packages\microsoft.minecraftuwp_8wekyb3d8bbwe\AC
-	// 中文字体：https://ghproxy.cc/https://github.com/cngege/MCModJScriptLoader/releases/download/0.0.1/JNMYT.ttf
+    // 中文字体：https://ghproxy.cc/https://github.com/cngege/MCModJScriptLoader/releases/download/0.0.1/JNMYT.ttf
     fs::path moduleDir = std::string(localAppData) + "\\..\\RoamingState\\JSRunner";
-	ModManager::getInstance()->setModulePath(moduleDir);
+    ModManager::getInstance()->setModulePath(moduleDir);
 
-	ModManager::getInstance()->pathCreate("");
-	ModManager::getInstance()->pathCreate("script");
-	ModManager::getInstance()->pathCreate("script/module");
-	ModManager::getInstance()->pathCreate("config");
-	ModManager::getInstance()->pathCreate("Assets");
-	ModManager::getInstance()->pathCreate("Assets/Fonts");
+    ModManager::getInstance()->pathCreate("");
+    ModManager::getInstance()->pathCreate("script");
+    ModManager::getInstance()->pathCreate("script/module");
+    ModManager::getInstance()->pathCreate("config");
+    ModManager::getInstance()->pathCreate("Assets");
+    ModManager::getInstance()->pathCreate("Assets/Fonts");
 
     if (fs::exists(moduleDir / "app.log")) {
         fs::remove(moduleDir / "app.log");
     }
-	ModManager::getInstance()->setImConfigPath("config/imgui.ini");
-	ModManager::getInstance()->setImLogPath("config/imgui_log.ini");
+    ModManager::getInstance()->setImConfigPath("config/imgui.ini");
+    ModManager::getInstance()->setImLogPath("config/imgui_log.ini");
 
-	auto file_logger = spdlog::basic_logger_mt("MCModJScriptLoader", ModManager::getInstance()->getPath("app.log").string());
-	file_logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg) {
-		switch(msg.level) {
-		case spdlog::level::info:
-			GetImguiConsole()->AddLog("[info] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
-			break;
-		case spdlog::level::warn:
-			GetImguiConsole()->AddLog("[warn] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
-			break;
-		case spdlog::level::err:
-			GetImguiConsole()->AddLog("[error] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
-			break;
-		case spdlog::level::debug:
-			GetImguiConsole()->AddLog("[debug] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
-			break;
-		case spdlog::level::trace:
-			GetImguiConsole()->AddLog("[trace] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
-			break;
-		case spdlog::level::critical:
-			GetImguiConsole()->AddLog("[critical] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
-			break;
-		default:
-			break;
-		}
-	}));
+    auto file_logger = spdlog::basic_logger_mt("MCModJScriptLoader", ModManager::getInstance()->getPath("app.log").string());
+    file_logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg) {
+        switch(msg.level) {
+        case spdlog::level::info:
+            GetImguiConsole()->AddLog("[info] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+            break;
+        case spdlog::level::warn:
+            GetImguiConsole()->AddLog("[warn] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+            break;
+        case spdlog::level::err:
+            GetImguiConsole()->AddLog("[error] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+            break;
+        case spdlog::level::debug:
+            GetImguiConsole()->AddLog("[debug] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+            break;
+        case spdlog::level::trace:
+            GetImguiConsole()->AddLog("[trace] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+            break;
+        case spdlog::level::critical:
+            GetImguiConsole()->AddLog("[critical] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+            break;
+        default:
+            break;
+        }
+    }));
     spdlog::set_default_logger(file_logger);
 
     spdlog::set_level(spdlog::level::debug);
     spdlog::flush_on(spdlog::level::debug);  // 日志保存等级
     spdlog::info("日志部分完工撒花..");
-	
-	ImguiHooks::InitImgui();
+    
+    ImguiHooks::InitImgui();
 
-	// httplib 下载字体文件
-	http::downFont_JNMYT(ModManager::getInstance()->getPath("Assets/Fonts"));
+    // httplib 下载字体文件
+    http::downFont_JNMYT(ModManager::getInstance()->getPath("Assets/Fonts"));
 
-	// BedrockLogOut 函数定位 内部有字符串 "!!! ERROR: Unable to format log output message !!!"
-	{
-		SignCode sign("BedrockLogOut");
-		sign << "48 89 54 24 ? 4C 89 44 24 ? 4C 89 4C 24 ? 55 53 56 57 41 54 41 56 41 57 48";
-		sign.AddSignCall("47 ? ? 48 8D 15 ? ? ? ? 41 8B ? E8", 14);
-		if(sign) {
-			gamelogger_info = HookManager::addHook(*sign, (void*)&BedrockLogOutHook);
-			gamelogger_info->hook();
-		}
-		else {
-			spdlog::warn("gamelogger Hook fail. in fun:{}", __FUNCTION__);
-		}
-	}
+    // BedrockLogOut 函数定位 内部有字符串 "!!! ERROR: Unable to format log output message !!!"
+    {
+        SignCode sign("BedrockLogOut");
+        sign << "48 89 54 24 ? 4C 89 44 24 ? 4C 89 4C 24 ? 55 53 56 57 41 54 41 56 41 57 48";
+        sign.AddSignCall("47 ? ? 48 8D 15 ? ? ? ? 41 8B ? E8", 14);
+        if(sign) {
+            gamelogger_info = HookManager::addHook(*sign, (void*)&BedrockLogOutHook);
+            gamelogger_info->hook();
+        }
+        else {
+            spdlog::warn("gamelogger Hook fail. in fun:{}", __FUNCTION__);
+        }
+    }
 
-	//JS Runner
-	rt = JS_NewRuntime();
-	ctx = JS_NewContext(rt);
-	js_std_init_handlers(rt);
-	JSManager::getInstance()->setctx(ctx);
-	JSManager::getInstance()->initJSManager();
+    //JS Runner
+    rt = JS_NewRuntime();
+    ctx = JS_NewContext(rt);
+    js_std_init_handlers(rt);
+    JSManager::getInstance()->setctx(ctx);
+    JSManager::getInstance()->initJSManager();
 
-	// 开启BigNumber
-	//JS_AddIntrinsicBigFloat(ctx);
-	//JS_AddIntrinsicBigDecimal(ctx);
-	//JS_AddIntrinsicOperators(ctx);
-	//JS_EnableBignumExt(ctx, true);
+    // 开启BigNumber
+    //JS_AddIntrinsicBigFloat(ctx);
+    //JS_AddIntrinsicBigDecimal(ctx);
+    //JS_AddIntrinsicOperators(ctx);
+    //JS_EnableBignumExt(ctx, true);
 
-	JS_SetModuleLoaderFunc(rt, nullptr, js_module_loader_local, nullptr);
-	
-	JSManager::getInstance()->loadNativeModule();
+    JS_SetModuleLoaderFunc(rt, nullptr, js_module_loader_local, nullptr);
+    
+    JSManager::getInstance()->loadNativeModule();
 
-	spdlogClass::Reg();
-	hookClass::Reg();
-	nativePointClass::Reg();
-	otherJSClass::Reg();
+    spdlogClass::Reg();
+    hookClass::Reg();
+    nativePointClass::Reg();
+    otherJSClass::Reg();
 
-	JSManager::getInstance()->loadJSFromFoder();
+    JSManager::getInstance()->loadJSFromFoder();
 
-	JSManager::getInstance()->registerImGuiMouseHandle();	//注册鼠标按键相关事件
-	JSManager::getInstance()->runstdLoop();					// 耗时操作， 跑完JS队列， 使 setTimeout工作
-	test();
-	ModManager::getInstance()->loopback();	// 循环等待卸载
-	stop(hModule);
-	Sleep(100);
-	::FreeLibraryAndExitThread(hModule, 0);		//只能退出 CreateThread 创建的线程
+    JSManager::getInstance()->registerImGuiMouseHandle();	//注册鼠标按键相关事件
+    JSManager::getInstance()->runstdLoop();					// 耗时操作， 跑完JS队列， 使 setTimeout工作
+    test();
+    ModManager::getInstance()->loopback();	// 循环等待卸载
+    stop(hModule);
+    Sleep(100);
+    ::FreeLibraryAndExitThread(hModule, 0);		//只能退出 CreateThread 创建的线程
 }
 
 static auto stop(HMODULE hModule)->void {
-	try {
-		//卸载Hook
-		HookManager::disableAllHook();
-		Sleep(10);
-		ImguiHooks::CloseImGui();
+    try {
+        //卸载Hook
+        HookManager::disableAllHook();
+        Sleep(10);
+        ImguiHooks::CloseImGui();
 
 
-		// 释放JS接口申请的资源
-		spdlogClass::Dispose();
-		hookClass::Dispose();
-		nativePointClass::Dispose();
-		otherJSClass::Dispose();
+        // 释放JS接口申请的资源
+        spdlogClass::Dispose();
+        hookClass::Dispose();
+        nativePointClass::Dispose();
+        otherJSClass::Dispose();
 
-		// 释放模块资源
-		JSManager::getInstance()->freeNativeModule(rt);
-		JSManager::getInstance()->disableJSManager();
+        // 释放模块资源
+        JSManager::getInstance()->freeNativeModule(rt);
+        JSManager::getInstance()->disableJSManager();
 
-		ModManager::getInstance()->disableMod((uintptr_t)hModule);
+        ModManager::getInstance()->disableMod((uintptr_t)hModule);
 
-		// JS释放
-		JS_FreeContext(ctx);
-		JS_FreeRuntime(rt);
+        // JS释放
+        JS_FreeContext(ctx);
+        JS_FreeRuntime(rt);
 
-		// spdlog shutdown
-		spdlog::shutdown();
-	}
-	catch(std::exception&) {}
+        // spdlog shutdown
+        spdlog::shutdown();
+    }
+    catch(std::exception&) {}
 }
 
 // Dll入口函数
 auto APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) -> BOOL {
-	DisableThreadLibraryCalls(hModule);//应用程序及其DLL的线程创建与销毁不再对此DLL进行通知
+    DisableThreadLibraryCalls(hModule);//应用程序及其DLL的线程创建与销毁不再对此DLL进行通知
     if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-		CreateThread(nullptr, NULL, (LPTHREAD_START_ROUTINE)start, hModule, NULL, nullptr);
+        CreateThread(nullptr, NULL, (LPTHREAD_START_ROUTINE)start, hModule, NULL, nullptr);
     }
-	//FreeLibrary()
+    //FreeLibrary()
     else if (ul_reason_for_call == DLL_PROCESS_DETACH) {
-		ModManager::getInstance()->stopSign();
-	}
-	
+        ModManager::getInstance()->stopSign();
+    }
+    
     return TRUE;
 }
 
 void test() {
-	//auto core = *(CoreWindow*)ModManager::getCoreWindow();
-	//spdlog::warn("Text CoreWindow Ptr: {} v: {}", (void*)core, *(void**)core);
-	//auto keyd = TypedEventHandler<CoreWindow, IKeyEventArgs>(&keydown);
-	//core->KeyDown(TypedEventHandler<CoreWindow, KeyEventArgs>(&keydown));
-	//auto pos = core.PointerPosition();
-	//spdlog::warn("X:{}, Y:{}", pos.X, pos.Y);
+    //auto core = *(CoreWindow*)ModManager::getCoreWindow();
+    //spdlog::warn("Text CoreWindow Ptr: {} v: {}", (void*)core, *(void**)core);
+    //auto keyd = TypedEventHandler<CoreWindow, IKeyEventArgs>(&keydown);
+    //core->KeyDown(TypedEventHandler<CoreWindow, KeyEventArgs>(&keydown));
+    //auto pos = core.PointerPosition();
+    //spdlog::warn("X:{}, Y:{}", pos.X, pos.Y);
 }
 
 
