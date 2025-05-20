@@ -137,10 +137,10 @@ static auto start(HMODULE hModule) -> void {
     spdlog::flush_on(spdlog::level::debug);  // 日志保存等级
     spdlog::info("日志部分完工撒花..");
 	
+	ImguiHooks::InitImgui();
+
 	// httplib 下载字体文件
 	http::downFont_JNMYT(ModManager::getInstance()->getPath("Assets/Fonts"));
-	
-	ImguiHooks::InitImgui();
 
 	// BedrockLogOut 函数定位 内部有字符串 "!!! ERROR: Unable to format log output message !!!"
 	{

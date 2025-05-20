@@ -5,6 +5,14 @@
 #include "../client/ModManager.h"
 #include "../jsClass/JSManager.h"
 
+
+
+// Portable helpers
+static int   Stricmp(const char* s1, const char* s2) { int d; while((d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; } return d; }
+static int   Strnicmp(const char* s1, const char* s2, int n) { int d = 0; while(n > 0 && (d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; n--; } return d; }
+static char* Strdup(const char* s) { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = malloc(len); IM_ASSERT(buf); if(buf == 0) return nullptr; return (char*)memcpy(buf, (const void*)s, len); }
+static void  Strtrim(char* s) { char* str_end = s + strlen(s); while(str_end > s && str_end[-1] == ' ') str_end--; *str_end = 0; }
+
 struct ExampleAppConsole
 {
     char                  InputBuf[256];
@@ -18,6 +26,7 @@ struct ExampleAppConsole
     bool                  PrintDebug;
     bool                  ShowDemoWindow;
     bool                  ScrollToBottom;
+    bool                  MainOpen=true;
 
     ExampleAppConsole() {
         //IMGUI_DEMO_MARKER("Examples/Console");
@@ -42,11 +51,6 @@ struct ExampleAppConsole
             free(History[i]);
     }
 
-    // Portable helpers
-    static int   Stricmp(const char* s1, const char* s2) { int d; while((d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; } return d; }
-    static int   Strnicmp(const char* s1, const char* s2, int n) { int d = 0; while(n > 0 && (d = toupper(*s2) - toupper(*s1)) == 0 && *s1) { s1++; s2++; n--; } return d; }
-    static char* Strdup(const char* s) { IM_ASSERT(s); size_t len = strlen(s) + 1; void* buf = malloc(len); IM_ASSERT(buf); if(buf == 0) return nullptr; return (char*)memcpy(buf, (const void*)s, len); }
-    static void  Strtrim(char* s) { char* str_end = s + strlen(s); while(str_end > s && str_end[-1] == ' ') str_end--; *str_end = 0; }
 
     void ClearLog() {
         for(int i = 0; i < Items.Size; i++)
@@ -65,13 +69,17 @@ struct ExampleAppConsole
         Items.push_back(Strdup(buf));
     }
 
-    void Draw(const char* title, bool* p_open) {
+    void Draw(const char* title) {
+        //if(ImGui::IsKeyChordPressed(ImGuiKey_ModCtrl | ImGuiKey::ImGuiKey_Insert)) {
+
+        //}
+
         if(ShowDemoWindow) {
             ImGui::ShowDemoWindow(&ShowDemoWindow);
         }
 
         ImGui::SetNextWindowSize(ImVec2(520, 600), ImGuiCond_FirstUseEver);
-        if(!ImGui::Begin(title, p_open)) {
+        if(!ImGui::Begin(title, &MainOpen)) {
             ImGui::End();
             return;
         }
@@ -81,7 +89,7 @@ struct ExampleAppConsole
         // Here we create a context menu only available from the title bar.
         if(ImGui::BeginPopupContextItem()) {
             if(ImGui::MenuItem("Close Console"))
-                *p_open = false;
+                MainOpen = false;
             ImGui::EndPopup();
         }
 
@@ -325,7 +333,7 @@ struct ExampleAppConsole
     }
 };
 
-auto GetImguiConsole() -> ExampleAppConsole* {
+inline auto GetImguiConsole() -> ExampleAppConsole* {
     static ExampleAppConsole console;
     return &console;
 }

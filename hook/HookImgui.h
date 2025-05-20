@@ -155,8 +155,7 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 
 		//Render::Updata();
 		//ImGui::ShowDemoWindow();
-		static bool show = true;
-		GetImguiConsole()->Draw("Logger Console:", &show);
+		GetImguiConsole()->Draw("Logger Console:");
 
 		JSManager::getInstance()->onImGuiRender();
 		//Game::GetModuleManager()->onImGUIRender();
@@ -289,8 +288,7 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 
 		//Render::Updata();
 		//ImGui::ShowDemoWindow();
-		static bool show = true;
-		GetImguiConsole()->Draw("Logger Console:", &show);
+		GetImguiConsole()->Draw("Logger Console:");
 
 		JSManager::getInstance()->onImGuiRender();
 		//Game::GetModuleManager()->onImGUIRender();

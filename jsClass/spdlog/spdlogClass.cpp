@@ -8,8 +8,8 @@ namespace {
 	static JSClassDef _spdlogClass = {
 		.class_name{"spdlog"},
 		.finalizer{[](JSRuntime* rt, JSValue val) {
-				auto spdlog = (spdlogClass*)JS_GetOpaque(val, id);
-				delete spdlog;
+				//auto spdlog = (spdlogClass*)JS_GetOpaque(val, id);
+				//delete spdlog;
 			}
 		}
 	};
@@ -44,8 +44,7 @@ void spdlogClass::Dispose() {
 
 JSValue spdlogClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
 	JSValue obj = JS_NewObjectClass(ctx, id);
-	auto self = new spdlogClass;
-	JS_SetOpaque(obj, self);
+	JS_SetOpaque(obj, nullptr);
 	return obj;
 }
 

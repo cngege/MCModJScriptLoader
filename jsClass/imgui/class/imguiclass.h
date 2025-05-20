@@ -2,7 +2,11 @@
 #include "../../JSManager.h"
 
 namespace JSForegroundDrawList {
-	JSClassID getForegroundDrawListID();
+    JSClassID getForegroundDrawListID();
+}
+
+namespace JSImGuiIO {
+    JSClassID getImGuiIOID();
 }
 
 void imguiclass_init();
