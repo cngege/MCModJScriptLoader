@@ -37,6 +37,9 @@ public:
     auto getErrorStack(JSValue) -> std::string;
     auto getErrorStack() -> std::string;
 
+    auto loadConfig() -> void;
+    auto saveConfig() -> void;
+
     auto onImGuiRenderScriptSig() -> void;
     // 存粹的外部ImGui渲染
     auto onImGuiRender() -> void;

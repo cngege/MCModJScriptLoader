@@ -24,8 +24,6 @@ using winrt::Windows::Foundation::TypedEventHandler;
 using winrt::Windows::System::VirtualKey;
 using winrt::Windows::UI::Core::CorePhysicalKeyStatus;
 using winrt::Windows::UI::Core::CoreVirtualKeyStates;
-using namespace winrt::Windows::UI::Notifications;
-using namespace winrt::Windows::UI::ViewManagement;
 using namespace winrt::Windows::ApplicationModel::Core;
 
 static CoreWindow win = NULL;

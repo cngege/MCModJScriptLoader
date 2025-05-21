@@ -106,7 +106,16 @@ static auto start(HMODULE hModule) -> void {
     ModManager::getInstance()->setImConfigPath("config/imgui.ini");
     ModManager::getInstance()->setImLogPath("config/imgui_log.ini");
 
-    auto file_logger = spdlog::basic_logger_mt("MCModJScriptLoader", ModManager::getInstance()->getPath("app.log").string());
+    ModManager::getInstance()->setOtherPath("ModConfig", "config/config.json");
+    if(!fs::exists(ModManager::getInstance()->getOtherPath("ModConfig"))) {
+        std::fstream config(ModManager::getInstance()->getOtherPath("ModConfig").string(), std::ios::out);
+        if(config.is_open()) {
+            config << "{}" << std::endl;
+            config.close();
+        }
+    }
+
+    auto file_logger = spdlog::basic_logger_mt("MCJSRunTime", ModManager::getInstance()->getPath("app.log").string());
     file_logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg) {
         switch(msg.level) {
         case spdlog::level::info:
@@ -117,6 +126,7 @@ static auto start(HMODULE hModule) -> void {
             break;
         case spdlog::level::err:
             GetImguiConsole()->AddLog("[error] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
+            //GetImguiConsole()->MainOpen = true;
             break;
         case spdlog::level::debug:
             GetImguiConsole()->AddLog("[debug] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
@@ -180,13 +190,13 @@ static auto start(HMODULE hModule) -> void {
 
     JSManager::getInstance()->loadJSFromFoder();
 
-    JSManager::getInstance()->registerImGuiMouseHandle();	//注册鼠标按键相关事件
-    JSManager::getInstance()->runstdLoop();					// 耗时操作， 跑完JS队列， 使 setTimeout工作
+    JSManager::getInstance()->registerImGuiMouseHandle();       //注册鼠标按键相关事件
+    JSManager::getInstance()->runstdLoop();                     // 耗时操作， 跑完JS队列， 使 setTimeout工作
     test();
-    ModManager::getInstance()->loopback();	// 循环等待卸载
+    ModManager::getInstance()->loopback();                      // 循环等待卸载
     stop(hModule);
     Sleep(100);
-    ::FreeLibraryAndExitThread(hModule, 0);		//只能退出 CreateThread 创建的线程
+    ::FreeLibraryAndExitThread(hModule, 0);                     //只能退出 CreateThread 创建的线程
 }
 
 static auto stop(HMODULE hModule)->void {

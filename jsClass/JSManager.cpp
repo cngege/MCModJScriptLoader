@@ -125,8 +125,10 @@ auto JSManager::loadJSFromFoder(const std::string& folder) -> void {
             }
 
             JS_FreeValue(m_ctx, val);
+            JS_FreeValue(m_ctx, gobj);
         }
     }
+    loadConfig();
 }
 
 static JSValue JSImConsoleWindow(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
@@ -201,10 +203,87 @@ auto JSManager::getErrorStack() -> std::string {
     return getErrorStack(JS_GetException(m_ctx));
 }
 
+auto JSManager::loadConfig() -> void {
+    auto g = JS_GetGlobalObject(m_ctx);
+    std::string config_str = "";
+    std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in | std::ios::out);
+    if(!configFileR.is_open()) {
+        spdlog::error("读取配置文件失败, 配置文件无法打开 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    }
+    else {
+        config_str = std::string(std::istreambuf_iterator<char>(configFileR), std::istreambuf_iterator<char>());
+        configFileR.close();
+        JSValue JSconfig = JS_ParseJSON(m_ctx, config_str.c_str(), config_str.size(), ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+        if(JS_IsException(JSconfig)) {
+            spdlog::error("读取配置文件解析JSON时出现错误 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+        }
+        else {
+            JSValue v[] = { JSconfig };
+            // 广播事件
+            NativeBroadcastEvent("onLoad", g, 1, v);
+        }
+        JS_FreeValue(m_ctx, JSconfig);
+    }
+    JS_FreeValue(m_ctx, g);
+}
+auto JSManager::saveConfig() -> void {
+    auto g = JS_GetGlobalObject(m_ctx);
+    std::string config_str = "";
+    std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in | std::ios::out);
+    if(!configFileR.is_open()) {
+        spdlog::error("保存失败, 配置文件无法打开 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    }
+    else {
+        config_str = std::string(std::istreambuf_iterator<char>(configFileR), std::istreambuf_iterator<char>());
+        configFileR.close();
+
+        JSValue JSconfig = JS_ParseJSON(m_ctx, config_str.c_str(), config_str.size(), ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+        if(JS_IsException(JSconfig)) {
+            spdlog::error("读取配置文件解析JSON时出现错误 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+        }
+        else {
+            JSValue v[] = { JSconfig };
+            // 广播事件
+            NativeBroadcastEvent("onSave", g, 1, v);
+            // 重新写回
+            JSValue json_str = JS_JSONStringify(m_ctx, JSconfig, JS_NULL, JS_NewInt32(m_ctx, 2));
+            if(JS_IsException(json_str)) {
+                spdlog::error("将脚本中的配置信息重新序列化为字符串的时候出错 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+            }
+            else {
+                auto newString = JSTool::toString(json_str);
+                if(!newString) {
+                    spdlog::error("将脚本中的配置信息重新序列化为字符串的时候出错 .2 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+                }
+                else {
+                    std::ofstream configFileW(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::out | std::ios::trunc);
+                    if(!configFileW.is_open()) {
+                        spdlog::error("在打开配置文件(准备写入)时失败 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+                    }
+                    else {
+                        configFileW.write(newString->c_str(), newString->size());
+                        configFileW.close();
+                        spdlog::info("配置保存成功, 写入 {} 字节", newString->size());
+                    }
+                }
+            }
+            JS_FreeValue(m_ctx, json_str);
+        }
+        JS_FreeValue(m_ctx, JSconfig);
+    }
+    JS_FreeValue(m_ctx, g);
+}
+
 
 auto JSManager::onImGuiRenderScriptSig() -> void {
+
+    if(ImGui::Button("读取")) {
+        loadConfig();
+    }
+
+    ImGui::SameLine();
     if(ImGui::Button("保存")) {
-        // TODO:
+        saveConfig();
     }
 
     std::shared_lock<std::shared_mutex> lock(rw_mtx_modulesigList);
