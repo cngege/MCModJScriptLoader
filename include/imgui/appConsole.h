@@ -26,7 +26,7 @@ struct ExampleAppConsole
     bool                  PrintDebug;
     bool                  ShowDemoWindow;
     bool                  ScrollToBottom;
-    bool                  MainOpen=true;
+    bool                  MainOpen=false;
 
     ExampleAppConsole() {
         //IMGUI_DEMO_MARKER("Examples/Console");

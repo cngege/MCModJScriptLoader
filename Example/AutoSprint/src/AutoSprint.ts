@@ -3,8 +3,24 @@ import * as 事件系统 from '事件系统'
 import SignCode from 'SignCode'
 import * as http from 'http'
 
+
 (function(模块 : 类型_公共模块){
     const logger = new spdlog();
+
+    事件系统.监听事件("onSave",function(data : any){
+        data[模块.name] = {
+            enable: 模块.enable
+        };
+        return true;
+    });
+
+    事件系统.监听事件("onLoad",function(data : any){
+        let thisData = data[模块.name];
+        if(thisData){
+            模块.enable = thisData.enable;
+        }
+    });
+
     let sign_old = new SignCode("移动输入特征码old", true);
     sign_old.AddSign("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC ? 0F B6 ? ? 49");
     if(sign_old.isOK()){

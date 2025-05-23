@@ -126,7 +126,7 @@ static auto start(HMODULE hModule) -> void {
             break;
         case spdlog::level::err:
             GetImguiConsole()->AddLog("[error] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
-            //GetImguiConsole()->MainOpen = true;
+            GetImguiConsole()->MainOpen = true;
             break;
         case spdlog::level::debug:
             GetImguiConsole()->AddLog("[debug] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());

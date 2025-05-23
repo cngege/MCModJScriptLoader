@@ -3,8 +3,31 @@ import * as 事件系统 from '事件系统'
 import SignCode from 'SignCode'
 import * as http from 'http'
 
+interface 模块数据{
+    dropCount: number;
+}
+
 (function(模块 : 类型_公共模块){
     const logger = new spdlog();
+    const otherdata : 模块数据 = {
+        dropCount: 100
+    }
+
+    事件系统.监听事件("onSave",function(data : any){
+        data[模块.name] = {
+            enable: 模块.enable,
+            dropCount: otherdata.dropCount
+        };
+        return true;
+    });
+
+    事件系统.监听事件("onLoad",function(data : any){
+        let thisData = data[模块.name];
+        if(thisData){
+            模块.enable = thisData.enable;
+            otherdata.dropCount = thisData.dropCount;
+        }
+    });
 
     //logger.setLevel(spdlog.Level.Debug);
     const findTopCall = (ptr:number)=>{
@@ -47,10 +70,25 @@ import * as http from 'http'
     if(sign_玩家破坏方块.isOK()){
         let 玩家破坏方块Hook : HookBase = new HookBase(function(block : number, player : number, pos : number){
             if(模块.enable){
-                for(let i = 0; i < 99; i++){
+                for(let i = 0; i < otherdata.dropCount - 1; i++){
                     玩家破坏方块Hook.origin.call(block, player, pos);
                 }
             }
+            //////
+            // vIndex: 21
+            //virtual void teleportTo(::Vec3 const& pos, bool shouldStopRiding, int, int, bool keepVelocity);
+
+            // let p = new NativePoint(player);
+            // let call = p.getpoint().offset(21 * 8).getpoint();
+            // call.setAgree([NativeTypes.Void,NativeTypes.UnsignedLongLong, NativeTypes.UnsignedLongLong,NativeTypes.Bool, NativeTypes.Int, NativeTypes.Int, NativeTypes.Bool]);
+            // if(call.toNumber() % 10 == 0){
+            //     call.call(player, pos, true, 0, 0, false);
+            //     logger.debug("teleportTo", call.toNumber());
+            // }
+
+
+
+            //////
             return 玩家破坏方块Hook.origin.call(block, player, pos);
         },sign_玩家破坏方块.get(), [NativeTypes.UnsignedLongLong, 
             NativeTypes.UnsignedLongLong/**This Block */, 

@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <shared_mutex>
 #include <list>
-
+#include <spdlog/spdlog.h>
 
 
 
@@ -101,6 +101,17 @@ static JSValue js_broadcastEvent(JSContext* ctx, JSValueConst this_val, int argc
             auto& e = it->second;
             for(auto& fun : e) {
                 auto ret = JS_Call(ctx, fun, this_val, argc - 2, (argc - 2)? argv + 2 : nullptr);
+                if(JS_IsException(ret)) {
+                    // 如果执行的时候出现了异常
+                    // 则停掉这个call的执行
+                    lock.unlock();
+                    std::unique_lock<std::shared_mutex> lock2(rw_mtx_eventList);
+
+                    spdlog::error(JSManager::getInstance()->getErrorStack().c_str());
+                    e.remove_if([=](JSValue& v) { return JS_VALUE_GET_PTR(fun) == JS_VALUE_GET_PTR(v); });
+                    spdlog::error("该监听将被移除");
+                    return ret;
+                }
                 JSValue p[] = { ret };
 
                 if(!JS_IsUndefined(ret) && !callisNull && JS_IsFunction(ctx, argv[1])) {
@@ -143,11 +154,19 @@ void NativeBroadcastEvent(const std::string& name, JSValueConst this_val, int ar
     if(it != jsEvent.end()) {
         //有 - 找到并调用
         auto& e = it->second;
+        auto ctx = JSManager::getInstance()->getctx();
         for(auto& fun : e) {
-            auto ret = JS_Call(JSManager::getInstance()->getctx(), fun, this_val, argc, argv);
+            auto ret = JS_Call(ctx, fun, this_val, argc, argv);
             if(JS_IsException(ret)) {
-                ModManager::getInstance()->trySafeExceptions(std::exception(JSManager::getInstance()->getErrorStack().c_str()));
-                JS_FreeValue(JSManager::getInstance()->getctx(), ret);
+                //ModManager::getInstance()->trySafeExceptions(std::exception(JSManager::getInstance()->getErrorStack().c_str()));
+                //JS_FreeValue(JSManager::getInstance()->getctx(), ret);
+                lock.unlock();
+                std::unique_lock<std::shared_mutex> lock2(rw_mtx_eventList);
+
+                spdlog::error(JSManager::getInstance()->getErrorStack().c_str());
+                spdlog::error("该监听将被移除");
+                e.remove_if([=](JSValue& v) { return JS_VALUE_GET_PTR(fun) == JS_VALUE_GET_PTR(v); });
+                JS_FreeValue(ctx, fun);
                 return;
             }
 
@@ -155,7 +174,7 @@ void NativeBroadcastEvent(const std::string& name, JSValueConst this_val, int ar
                 JS_BOOL b = JS_ToBool(JSManager::getInstance()->getctx(), ret);
                 callback(b);
             }
-            JS_FreeValue(JSManager::getInstance()->getctx(), ret);
+            JS_FreeValue(ctx, ret);
         }
     }
 }

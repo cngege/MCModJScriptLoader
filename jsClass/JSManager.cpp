@@ -447,6 +447,7 @@ JSValue JSTool::fromString(std::string str) {
 
 
 
+
 JSValue JSTool::ReferenceValue(bool* v, JSValue jsv, const char* name) {
     auto ctx = JSManager::getInstance()->getctx();
     std::string pname = name ? name : "bool";
@@ -532,4 +533,15 @@ void JSTool::ReferenceValue(float v, JSValue jsv, const char* name) {
     auto ctx = JSManager::getInstance()->getctx();
     std::string pname = name ? name : "float";
     JSTool::ReferenceValue(static_cast<double>(v), jsv, pname.c_str());
+}
+
+
+JSTool::Param JSTool::createParseParameter(int argc, JSValue* argv) {
+    return JSTool::Param(argc, argv);
+}
+
+JSTool::Param::Param(int argc, JSValue* argv) : m_argc(argc), m_argv(argv) {}
+
+const std::string JSTool::Param::Build() const {
+    return m_JSErr;
 }
