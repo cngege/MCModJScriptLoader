@@ -59,6 +59,7 @@ private:
 
 class JSTool {
 public:
+
     /**
      * @brief 尝试从JS值中读取字符串
      * @param  
@@ -144,7 +145,12 @@ public:
          * @return 当前中间类,以支持继续解析或者Build
          */
         template<typename T>
-        Param& Parse(std::optional<T>& ref/*, bool isOptional = true*/);
+        Param& Parse(std::optional<T>& ref);
+
+        Param& Parse(bool need = true);
+
+        //template<typename T>
+        //Param& ParseCall(std::function<T(T)>& refcall);
         /**
          * @brief 结束解析，返回最终结果
          * @return 字符串, 非空时表示存在错误
@@ -196,6 +202,11 @@ public:
     static void ReferenceValue(double, JSValue, const char* = 0);
     static JSValue ReferenceValue(float*, JSValue, const char* = 0);
     static void ReferenceValue(float, JSValue, const char* = 0);
+
+    static std::string ReferenceBoolCall(JSValue, std::function<void(bool*)> call);
+    static std::string ReferenceIntCall(JSValue, std::function<void(int*)> call);
+    static std::string ReferenceFloatCall(JSValue, std::function<void(float*)> call);
+    static std::string ReferenceDoubleCall(JSValue, std::function<void(double*)> call);
 };
 
 template<typename T>

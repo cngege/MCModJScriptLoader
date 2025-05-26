@@ -321,6 +321,9 @@ auto JSManager::disableJSManager() -> void {
 std::optional<std::string> JSTool::toString(JSValue jsv) {
     auto ctx = JSManager::getInstance()->getctx();
     std::optional<std::string> str;
+    if(!JS_IsString(jsv)) {
+        jsv = JS_ToString(ctx, jsv);
+    }
     if(JS_IsString(jsv)) {
         const char* s = JS_ToCString(ctx, jsv);
         str = std::string(s);
@@ -535,12 +538,145 @@ void JSTool::ReferenceValue(float v, JSValue jsv, const char* name) {
     JSTool::ReferenceValue(static_cast<double>(v), jsv, pname.c_str());
 }
 
+std::string JSTool::ReferenceBoolCall(JSValue jsv, std::function<void(bool*)> call) {
+    try {
+        auto ctx = JSManager::getInstance()->getctx();
+        bool show = false;
+        if(!JS_IsFunction(ctx, jsv)) {
+            return "传入的参数不是一个回调函数";
+        }
+        JSValue callret = JS_Call(ctx, jsv, JS_NULL, 0, nullptr);   // 首先调用一个空参获取一个值
+        if(JS_IsException(callret)) {
+            JS_FreeValue(ctx, callret);
+            return "JS函数调用抛出异常";
+        }
+        int retv = JS_ToBool(ctx, callret);
+        JS_FreeValue(ctx, callret);
+        if(retv < 0) {
+            return "Call的返回值转为bool时失败";
+        }
+        show = retv;
+        call(&show);
+
+        JSValue canshuv = JS_NewBool(ctx, show);
+        JSValue canshu[] = { canshuv };
+        JS_FreeValue(ctx, JS_Call(ctx, jsv, JS_NULL, 1, canshu));
+        JS_FreeValue(ctx, canshuv);
+    }
+    catch(std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+
+std::string JSTool::ReferenceIntCall(JSValue jsv, std::function<void(int*)> call) {
+    try {
+        auto ctx = JSManager::getInstance()->getctx();
+        int v = 0;
+        if(!JS_IsFunction(ctx, jsv)) {
+            return "传入的参数不是一个回调函数";
+        }
+        JSValue callret = JS_Call(ctx, jsv, JS_NULL, 0, nullptr);   // 首先调用一个空参获取一个值
+        if(JS_IsException(callret)) {
+            JS_FreeValue(ctx, callret);
+            return "JS函数调用抛出异常";
+        }
+        auto retv = toInt(callret);
+        JS_FreeValue(ctx, callret);
+        if(!retv) {
+            return "Call的返回值转为int时失败";
+        }
+        v = *retv;
+        call(&v);
+
+        JSValue canshuv = JS_NewInt32(ctx, v);
+        JSValue canshu[] = { canshuv };
+        JS_FreeValue(ctx, JS_Call(ctx, jsv, JS_NULL, 1, canshu));
+        JS_FreeValue(ctx, canshuv);
+    }
+    catch(std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+
+std::string JSTool::ReferenceFloatCall(JSValue jsv, std::function<void(float*)> call) {
+    try {
+        auto ctx = JSManager::getInstance()->getctx();
+        float v = 0;
+        if(!JS_IsFunction(ctx, jsv)) {
+            return "传入的参数不是一个回调函数";
+        }
+        JSValue callret = JS_Call(ctx, jsv, JS_NULL, 0, nullptr);   // 首先调用一个空参获取一个值
+        if(JS_IsException(callret)) {
+            JS_FreeValue(ctx, callret);
+            return "JS函数调用抛出异常";
+        }
+        auto retv = toFloat(callret);
+        JS_FreeValue(ctx, callret);
+        if(!retv) {
+            return "Call的返回值转为float时失败";
+        }
+        v = *retv;
+        call(&v);
+
+        JSValue canshuv = JS_NewFloat64(ctx, v);
+        JSValue canshu[] = { canshuv };
+        JS_FreeValue(ctx, JS_Call(ctx, jsv, JS_NULL, 1, canshu));
+        JS_FreeValue(ctx, canshuv);
+    }
+    catch(std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+
+std::string JSTool::ReferenceDoubleCall(JSValue jsv, std::function<void(double*)> call) {
+    try {
+        auto ctx = JSManager::getInstance()->getctx();
+        double v = 0;
+        if(!JS_IsFunction(ctx, jsv)) {
+            return "传入的参数不是一个回调函数";
+        }
+        JSValue callret = JS_Call(ctx, jsv, JS_NULL, 0, nullptr);   // 首先调用一个空参获取一个值
+        if(JS_IsException(callret)) {
+            JS_FreeValue(ctx, callret);
+            return "JS函数调用抛出异常";
+        }
+        auto retv = toDouble(callret);
+        JS_FreeValue(ctx, callret);
+        if(!retv) {
+            return "Call的返回值转为double时失败";
+        }
+        v = *retv;
+        call(&v);
+
+        JSValue canshuv = JS_NewFloat64(ctx, v);
+        JSValue canshu[] = { canshuv };
+        JS_FreeValue(ctx, JS_Call(ctx, jsv, JS_NULL, 1, canshu));
+        JS_FreeValue(ctx, canshuv);
+    }
+    catch(std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+
 
 JSTool::Param JSTool::createParseParameter(int argc, JSValue* argv) {
     return JSTool::Param(argc, argv);
 }
 
 JSTool::Param::Param(int argc, JSValue* argv) : m_argc(argc), m_argv(argv) {}
+
+JSTool::Param& JSTool::Param::Parse(bool need) {
+    if(m_index >= m_argc && need) { // 不够
+        m_hasErr = true;
+        m_JSErr = std::format("仅有{}个参数是不够的，正在尝试读取第{}个参数", m_argc, m_index + 1);
+    }
+    m_index++;
+    return *this;
+}
 
 const std::string JSTool::Param::Build() const {
     return m_JSErr;
