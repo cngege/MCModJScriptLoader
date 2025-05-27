@@ -405,6 +405,140 @@ std::optional<std::array<float, 3>> JSTool::getPropXYZ(JSValue jsv) {
     return ret;
 }
 
+std::optional<std::array<float, 3>> JSTool::getPropRGB(JSValue jsv) {
+    auto ctx = JSManager::getInstance()->getctx();
+    std::optional<std::array<float, 3>> ret;
+    JSValue xValue = JS_GetPropertyStr(ctx, jsv, "r");
+    JSValue yValue = JS_GetPropertyStr(ctx, jsv, "g");
+    JSValue zValue = JS_GetPropertyStr(ctx, jsv, "b");
+    double x, y, z;
+    if(!JS_IsNumber(xValue) || !JS_IsNumber(yValue) || !JS_IsNumber(zValue) || JS_ToFloat64(ctx, &x, xValue) < 0 || JS_ToFloat64(ctx, &y, yValue) < 0 || JS_ToFloat64(ctx, &z, zValue) < 0) {
+        return ret;
+    }
+    ret = { static_cast<float>(x), static_cast<float>(y), static_cast<float>(z) };
+    return ret;
+}
+
+std::optional<std::array<float, 4>> JSTool::getPropXYZW(JSValue jsv) {
+    auto ctx = JSManager::getInstance()->getctx();
+    std::optional<std::array<float, 4>> ret;
+    JSValue xValue = JS_GetPropertyStr(ctx, jsv, "x");
+    JSValue yValue = JS_GetPropertyStr(ctx, jsv, "y");
+    JSValue zValue = JS_GetPropertyStr(ctx, jsv, "z");
+    JSValue wValue = JS_GetPropertyStr(ctx, jsv, "w");
+    double x, y, z, w;
+    if(!JS_IsNumber(xValue) || !JS_IsNumber(yValue) || !JS_IsNumber(zValue) || !JS_IsNumber(wValue) 
+       || JS_ToFloat64(ctx, &x, xValue) < 0 || JS_ToFloat64(ctx, &y, yValue) < 0 || JS_ToFloat64(ctx, &z, zValue) < 0 || JS_ToFloat64(ctx, &w, wValue) < 0) {
+        return ret;
+    }
+    ret = { static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), static_cast<float>(w) };
+    return ret;
+}
+
+std::optional<std::array<float, 4>> JSTool::getPropRGBA(JSValue jsv) {
+    auto ctx = JSManager::getInstance()->getctx();
+    std::optional<std::array<float, 4>> ret;
+    JSValue xValue = JS_GetPropertyStr(ctx, jsv, "r");
+    JSValue yValue = JS_GetPropertyStr(ctx, jsv, "g");
+    JSValue zValue = JS_GetPropertyStr(ctx, jsv, "b");
+    JSValue wValue = JS_GetPropertyStr(ctx, jsv, "a");
+    double x, y, z, w;
+    if(!JS_IsNumber(xValue) || !JS_IsNumber(yValue) || !JS_IsNumber(zValue) || !JS_IsNumber(wValue)
+       || JS_ToFloat64(ctx, &x, xValue) < 0 || JS_ToFloat64(ctx, &y, yValue) < 0 || JS_ToFloat64(ctx, &z, zValue) < 0 || JS_ToFloat64(ctx, &w, wValue) < 0) {
+        return ret;
+    }
+    ret = { static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), static_cast<float>(w) };
+    return ret;
+}
+
+bool JSTool::setPropXY(JSValue jsv, std::array<float, 2> v) {
+    auto ctx = JSManager::getInstance()->getctx();
+    auto x = JS_NewFloat64(ctx, v.at(0));
+    auto y = JS_NewFloat64(ctx, v.at(1));
+
+    if(JS_SetPropertyStr(ctx, jsv, "x", x) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "y", y) < 0) return false;
+
+    JS_FreeValue(ctx, x);
+    JS_FreeValue(ctx, y);
+
+    return true;
+}
+
+bool JSTool::setPropXYZ(JSValue jsv, std::array<float, 3> v) {
+    auto ctx = JSManager::getInstance()->getctx();
+    auto x = JS_NewFloat64(ctx, v.at(0));
+    auto y = JS_NewFloat64(ctx, v.at(1));
+    auto z = JS_NewFloat64(ctx, v.at(2));
+
+    if(JS_SetPropertyStr(ctx, jsv, "x", x) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "y", y) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "z", z) < 0) return false;
+
+    JS_FreeValue(ctx, x);
+    JS_FreeValue(ctx, y);
+    JS_FreeValue(ctx, z);
+
+    return true;
+}
+
+bool JSTool::setPropXYZW(JSValue jsv, std::array<float, 4> v) {
+    auto ctx = JSManager::getInstance()->getctx();
+    auto x = JS_NewFloat64(ctx, v.at(0));
+    auto y = JS_NewFloat64(ctx, v.at(1));
+    auto z = JS_NewFloat64(ctx, v.at(2));
+    auto w = JS_NewFloat64(ctx, v.at(3));
+
+    if(JS_SetPropertyStr(ctx, jsv, "x", x) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "y", y) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "z", z) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "w", w) < 0) return false;
+
+    JS_FreeValue(ctx, x);
+    JS_FreeValue(ctx, y);
+    JS_FreeValue(ctx, z);
+    JS_FreeValue(ctx, w);
+
+    return true;
+}
+
+bool JSTool::setPropRGB(JSValue jsv, std::array<float, 3> v) {
+    auto ctx = JSManager::getInstance()->getctx();
+    auto x = JS_NewFloat64(ctx, v.at(0));
+    auto y = JS_NewFloat64(ctx, v.at(1));
+    auto z = JS_NewFloat64(ctx, v.at(2));
+
+    if(JS_SetPropertyStr(ctx, jsv, "r", x) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "g", y) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "b", z) < 0) return false;
+
+    JS_FreeValue(ctx, x);
+    JS_FreeValue(ctx, y);
+    JS_FreeValue(ctx, z);
+
+    return true;
+}
+
+bool JSTool::setPropRGBA(JSValue jsv, std::array<float, 4> v) {
+    auto ctx = JSManager::getInstance()->getctx();
+    auto x = JS_NewFloat64(ctx, v.at(0));
+    auto y = JS_NewFloat64(ctx, v.at(1));
+    auto z = JS_NewFloat64(ctx, v.at(2));
+    auto w = JS_NewFloat64(ctx, v.at(3));
+
+    if(JS_SetPropertyStr(ctx, jsv, "r", x) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "g", y) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "b", z) < 0) return false;
+    if(JS_SetPropertyStr(ctx, jsv, "a", w) < 0) return false;
+
+    JS_FreeValue(ctx, x);
+    JS_FreeValue(ctx, y);
+    JS_FreeValue(ctx, z);
+    JS_FreeValue(ctx, w);
+
+    return true;
+}
+
 std::optional<std::vector<JSValue>> JSTool::toArray(JSValue jsv) {
     auto ctx = JSManager::getInstance()->getctx();
     std::optional<std::vector<JSValue>> ret{};
@@ -446,6 +580,11 @@ JSValue JSTool::fromString(std::string str) {
         return JS_EXCEPTION;
     }
     return js_str;
+}
+
+bool JSTool::isFun(JSValue jsv) {
+    auto ctx = JSManager::getInstance()->getctx();
+    return JS_IsFunction(ctx, jsv);
 }
 
 
@@ -660,6 +799,138 @@ std::string JSTool::ReferenceDoubleCall(JSValue jsv, std::function<void(double*)
         return ex.what();
     }
     return std::string();
+}
+
+// (_ = str:string) => str = _;
+std::string JSTool::ReferenceStringCall(JSValue jsv,size_t size, std::function<void(char*)> call) {
+    try {
+        auto ctx = JSManager::getInstance()->getctx();
+        //std::string v = {};
+        if(!JS_IsFunction(ctx, jsv)) {
+            return "传入的参数不是一个回调函数";
+        }
+        JSValue callret = JS_Call(ctx, jsv, JS_NULL, 0, nullptr);   // 首先调用一个空参获取一个值
+        if(JS_IsException(callret)) {
+            JS_FreeValue(ctx, callret);
+            return "JS函数调用抛出异常";
+        }
+        auto retv = toString(callret);
+        JS_FreeValue(ctx, callret);
+        if(!retv) {
+            return "Call的返回值转为string时失败";
+        }
+        char* text = new char[size];
+        if(text == NULL) throw std::runtime_error(std::format("申请{}长度的char数组失败 in {}:{}", size, __FILE__, __LINE__));
+        memset(text, '\0', size);
+        memcpy_s(text, size, retv->c_str(), retv->size());
+
+        call(text);
+
+        JSValue canshuv = fromString(std::string(text)); delete[] text;
+        JSValue canshu[] = { canshuv };
+        JS_FreeValue(ctx, JS_Call(ctx, jsv, JS_NULL, 1, canshu));
+        JS_FreeValue(ctx, canshuv);
+    }
+    catch(std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+
+std::string JSTool::ReferenceVec2PropCall(JSValue jsv, std::function<void(float*)> call) {
+    try {
+        auto ctx = JSManager::getInstance()->getctx();
+        float v2[2] = {0};
+        auto getv = getPropXY(jsv);
+        if(!getv) throw std::runtime_error("获取对象属性x,y失败");
+        v2[0] = getv->at(0);
+        v2[1] = getv->at(1);
+
+        call(v2);
+
+        if(!setPropXY(jsv, { v2[0], v2[1] })) {
+            throw std::runtime_error("设置对象属性x,y失败");
+        }
+    }
+    catch(std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+
+std::string JSTool::ReferenceVec3PropCall(JSValue jsv, std::function<void(float*)> call) {
+    try {
+        auto ctx = JSManager::getInstance()->getctx();
+        bool isxyz = true;
+        float v3[3] = { 0 };
+        auto getv = getPropXYZ(jsv);
+        if(!getv) {
+            getv = getPropRGB(jsv);
+            isxyz = false;
+            if(!getv) throw std::runtime_error("获取对象属性x,y,z 或 r,g,b失败");
+        }
+        v3[0] = getv->at(0);
+        v3[1] = getv->at(1);
+        v3[2] = getv->at(2);
+
+        call(v3);
+        if(isxyz) {
+            if(!setPropXYZ(jsv, { v3[0], v3[1], v3[2] })) {
+                throw std::runtime_error("设置对象属性x,y,z失败");
+            }
+        }
+        else {
+            if(!setPropRGB(jsv, { v3[0], v3[1], v3[2] })) {
+                throw std::runtime_error("设置对象属性r,g,b失败");
+            }
+        }
+
+    }
+    catch(std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+
+std::string JSTool::ReferenceVec4PropCall(JSValue jsv, std::function<void(float*)> call) {
+    try {
+        auto ctx = JSManager::getInstance()->getctx();
+        bool isxyzw = true;
+        float v4[4] = { 0 };
+        auto getv = getPropXYZW(jsv);
+        if(!getv) {
+            getv = getPropRGBA(jsv);
+            isxyzw = false;
+            if(!getv) throw std::runtime_error("获取对象属性x,y,z,w 或 r,g,b,a失败");
+        }
+        v4[0] = getv->at(0);
+        v4[1] = getv->at(1);
+        v4[2] = getv->at(2);
+        v4[3] = getv->at(3);
+
+        call(v4);
+
+        if(isxyzw) {
+            if(!setPropXYZW(jsv, { v4[0], v4[1], v4[2], v4[3] })) {
+                throw std::runtime_error("设置对象属性x,y,z,w失败");
+            }
+        }
+        else{
+            if(!setPropRGBA(jsv, { v4[0], v4[1], v4[2], v4[3] })) {
+                throw std::runtime_error("设置对象属性r,g,b,a失败");
+            }
+        }
+
+    }
+    catch(std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+
+int JSTool::iMin(size_t v1, int v2) {
+    if(v1 > v2) return v2;
+    else return static_cast<int>(v1);
 }
 
 

@@ -102,6 +102,42 @@ public:
      * @return
      */
     static std::optional<std::array<float, 3>> getPropXYZ(JSValue);
+    static std::optional<std::array<float, 3>> getPropRGB(JSValue);
+
+    static std::optional<std::array<float, 4>> getPropXYZW(JSValue);
+    static std::optional<std::array<float, 4>> getPropRGBA(JSValue);
+
+    /**
+     * @brief 给一个JS值设置对象属性
+     * @param  
+     * @param  
+     */
+    static bool setPropXY(JSValue, std::array<float, 2>);
+    /**
+     * @brief 给一个JS值设置对象属性
+     * @param
+     * @param
+     */
+    static bool setPropXYZ(JSValue, std::array<float, 3>);
+    /**
+     * @brief 给一个JS值设置对象属性
+     * @param
+     * @param
+     */
+    static bool setPropXYZW(JSValue, std::array<float, 4>);
+    /**
+     * @brief 给一个JS值设置对象属性
+     * @param
+     * @param
+     */
+    static bool setPropRGB(JSValue, std::array<float, 3>);
+    /**
+     * @brief 给一个JS值设置对象属性
+     * @param
+     * @param
+     */
+    static bool setPropRGBA(JSValue, std::array<float, 4>);
+
     /**
      * @brief 尝试从JS值中以数组的方式读取, 并尝试转为C++数组
      * @param
@@ -130,6 +166,8 @@ public:
      * @return 
      */
     static JSValue fromString(std::string);
+
+    static bool isFun(JSValue jsv);
 
     /**
      * @brief 进行JS二进制函数参数解析的中间构建类
@@ -203,10 +241,41 @@ public:
     static JSValue ReferenceValue(float*, JSValue, const char* = 0);
     static void ReferenceValue(float, JSValue, const char* = 0);
 
+    /**
+     * @brief 为了适配ImGui中的指针引用,采用回调函数的方式改写值
+     * @param  某个参数，比如为回调
+     * @param call 使用call进行上下文处理
+     * @return 错误字符串，enemy 不为空的时候表示有错误
+     */
     static std::string ReferenceBoolCall(JSValue, std::function<void(bool*)> call);
+    /**
+     * @brief 为了适配ImGui中的指针引用,采用回调函数的方式改写值
+     * @param  某个参数，比如为回调
+     * @param call 使用call进行上下文处理
+     * @return 错误字符串，enemy 不为空的时候表示有错误
+     */
     static std::string ReferenceIntCall(JSValue, std::function<void(int*)> call);
+    /**
+     * @brief 为了适配ImGui中的指针引用,采用回调函数的方式改写值
+     * @param  某个参数，比如为回调
+     * @param call 使用call进行上下文处理
+     * @return 错误字符串，enemy 不为空的时候表示有错误
+     */
     static std::string ReferenceFloatCall(JSValue, std::function<void(float*)> call);
+    /**
+     * @brief 为了适配ImGui中的指针引用,采用回调函数的方式改写值
+     * @param  某个参数，比如为回调
+     * @param call 使用call进行上下文处理
+     * @return 错误字符串，enemy 不为空的时候表示有错误
+     */
     static std::string ReferenceDoubleCall(JSValue, std::function<void(double*)> call);
+    static std::string ReferenceStringCall(JSValue, size_t, std::function<void(char*)> call);
+
+    static std::string ReferenceVec2PropCall(JSValue, std::function<void(float*)> call);
+    static std::string ReferenceVec3PropCall(JSValue, std::function<void(float*)> call);
+    static std::string ReferenceVec4PropCall(JSValue, std::function<void(float*)> call);
+
+    static int iMin(size_t v1, int v2);
 };
 
 template<typename T>
@@ -233,7 +302,7 @@ std::optional<std::vector<T>> JSTool::getArray(JSValue v, std::function<T(size_t
 
 template<typename T>
 inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
-    //auto ctx = JSManager::getInstance()->getctx();
+    auto ctx = JSManager::getInstance()->getctx();
     using DecayT = std::decay_t<T>;
 
     if(m_hasErr) return *this;
@@ -241,18 +310,36 @@ inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
         // 不够也要分情况，如果当前值是可选的, 那么没事
         if(!ref.has_value()) {
             m_hasErr = true;
-            m_JSErr = std::format("仅有{}个参数是不够的，正在尝试读取第{}个参数", m_argc, m_index + 1);
+            m_JSErr = std::format("仅有{}个参数是不够的，正在尝试读取第{}个参数 in:{}:{}", m_argc, m_index + 1, __FILE__, __LINE__);
         }
         m_index++;
         return *this;
     }
+    // 只要这个参数在C++中有预设值，那就允许js传参为null
+    if((JS_IsNull(m_argv[m_index]) || JS_IsUndefined(m_argv[m_index])) && ref) {
+        m_index++;
+        return *this;
+    }
 
-    if constexpr(std::is_same_v<DecayT, int>) {
+    if constexpr(std::is_same_v<DecayT, bool>) {
+
+        auto v = JS_ToBool(ctx, m_argv[m_index]);
+        if(v < 0) {
+            m_hasErr = true;
+            m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "int", __FILE__, __LINE__);
+        }
+        else {
+            ref = v;
+        }
+        m_index++;
+        return *this;
+    }
+    else if constexpr(std::is_same_v<DecayT, int>) {
         
         auto v = toInt(m_argv[m_index]);
         if(!v) {
             m_hasErr = true;
-            m_JSErr = std::format("{} 号参数转为{}类型值失败", m_index, "int");
+            m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "int", __FILE__, __LINE__);
         }
         else {
             ref = *v;
@@ -264,10 +351,22 @@ inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
         auto v = toInt64(m_argv[m_index]);
         if(!v) {
             m_hasErr = true;
-            m_JSErr = std::format("{} 号参数转为{}类型值失败", m_index, "int64");
+            m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "int64", __FILE__, __LINE__);
         }
         else {
             ref = *v;
+        }
+        m_index++;
+        return *this;
+    }
+    else if constexpr(std::is_same_v<DecayT, size_t>) {
+        auto v = toInt64(m_argv[m_index]);
+        if(!v) {
+            m_hasErr = true;
+            m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "size_t",__FILE__, __LINE__);
+        }
+        else {
+            ref = (size_t)*v;
         }
         m_index++;
         return *this;
@@ -276,7 +375,7 @@ inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
         auto v = toFloat(m_argv[m_index]);
         if(!v) {
             m_hasErr = true;
-            m_JSErr = std::format("{} 号参数转为{}类型值失败", m_index, "float");
+            m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "float", __FILE__, __LINE__);
         }
         else {
             ref = *v;
@@ -288,7 +387,7 @@ inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
         auto v = toDouble(m_argv[m_index]);
         if(!v) {
             m_hasErr = true;
-            m_JSErr = std::format("{} 号参数转为{}类型值失败", m_index, "double");
+            m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "double", __FILE__, __LINE__);
         }
         else {
             ref = *v;
@@ -300,7 +399,7 @@ inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
         auto v = getPropXY(m_argv[m_index]);
         if(!v) {
             m_hasErr = true;
-            m_JSErr = std::format("{} 号参数转为{}类型值失败", m_index, "ImVec2");
+            m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "ImVec2", __FILE__, __LINE__);
         }
         else {
             ref = {v->at(0), v->at(1)};
@@ -312,7 +411,7 @@ inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
         auto v = toString(m_argv[m_index]);
         if(!v) {
             m_hasErr = true;
-            m_JSErr = std::format("{} 号参数转为{}类型值失败", m_index, "string");
+            m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "string", __FILE__, __LINE__);
         }
         else {
             ref = *v;
@@ -320,9 +419,36 @@ inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
         m_index++;
         return *this;
     }
+    else if constexpr(std::is_same_v<DecayT, std::vector<std::string>>) {
+        try {
+            auto v = getArray<std::string>(m_argv[m_index], [=](size_t i, JSValue jsv) {
+                auto readjsvstr = JSTool::toString(jsv);
+                if(!readjsvstr) {
+                    throw std::runtime_error(std::format("读取转化JS数组{}号成员为{}时失败 in:{}:{}",i, "字符串", __FILE__, __LINE__));
+                }
+                else {
+                    return *readjsvstr;
+                }
+            });
+            if(!v) {
+                m_hasErr = true;
+                m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "string[]", __FILE__, __LINE__);
+            }
+            else {
+                ref = *v;
+            }
+        }
+        catch(std::exception& ex) {
+            m_hasErr = true;
+            m_JSErr = std::format("{} 号参数转为{}类型值失败，错误:{}  in:{}:{}", m_index, "string[]", ex.what(), __FILE__, __LINE__);
+        }
+
+        m_index++;
+        return *this;
+    }
     else {
         m_hasErr = true;
-        m_JSErr = std::format("{} 号参数转为{}类型值失败", m_index, "[未知类型]");
+        m_JSErr = std::format("{} 号参数转为{}类型值失败 in:{}:{}", m_index, "[未知类型]", __FILE__, __LINE__);
         m_index++;
 
         static_assert(std::is_same_v<DecayT, void>, "尚未支持的解析参数");

@@ -52,32 +52,6 @@ static JSValue js_imgui_Begin(JSContext* ctx, JSValueConst this_val, int argc, J
     }
 
     return JS_NewBool(ctx, ret);
-
-
-    //if(argc >= 1) {
-    //    auto str = JSTool::toString(argv[0]);
-    //    if(!str) return JS_ThrowTypeError(ctx, "参数1应传入字符串");
-    //    bool ret = false;
-
-    //    // 第二个参数
-    //    if(argc >= 2) {
-    //        auto ret_str = JSTool::ReferenceBoolCall(argv[0], [&](bool* v) {
-    //            if(argc >= 3) {
-    //                auto intval = JSTool::toInt(argv[2]);
-    //                if(!intval) throw std::runtime_error("参数3需要一个Number 作为flag");
-    //                ret = ImGui::Begin(str->c_str(), v, *intval);
-    //            }
-    //            ret = ImGui::Begin(str->c_str(), v);
-    //        });
-    //        if(!ret_str.empty()) {
-    //            return JS_ThrowTypeError(ctx, ret_str.c_str());
-    //        }
-    //        return JS_NewBool(ctx, ret);
-    //    }
-    //    ret = ImGui::Begin(str->c_str());
-    //    return JS_NewBool(ctx, ret);
-    //}
-    //return JS_ThrowTypeError(ctx, "至少需要一个参数,类型为String");
 }
 
 static JSValue js_imgui_End(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
@@ -117,24 +91,6 @@ static JSValue js_imgui_Button(JSContext* ctx, JSValueConst this_val, int argc, 
     }
     bool ret = ImGui::Button(str->c_str(), size.value());
     return JS_NewBool(ctx, ret);
-
-    //if(argc >= 1) {
-    //    auto str = JSTool::toString(argv[0]);
-    //    if(!str) return JS_ThrowTypeError(ctx, "参数1应传入字符串");
-    //    bool ret = false;
-
-    //    if(argc >= 2) {
-    //        auto getxy = JSTool::getPropXY(argv[1]);
-    //        if(!getxy) {
-    //            return JS_ThrowTypeError(ctx, "参数2应包含属性x(Number),y(Number)");
-    //        }
-    //        ret = ImGui::Button(str->c_str(),{ getxy->at(0), getxy->at(1)});
-    //        return JS_NewBool(ctx, ret);
-    //    }
-    //    ret = ImGui::Button(str->c_str());
-    //    return JS_NewBool(ctx, ret);
-    //}
-    //return JS_ThrowTypeError(ctx, "至少需要一个参数,类型为String");
 }
 
 static JSValue js_imgui_Checkbox(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
@@ -143,7 +99,6 @@ static JSValue js_imgui_Checkbox(JSContext* ctx, JSValueConst this_val, int argc
 
     bool ret = false;
     std::optional<std::string> label;
-    //v
 
     auto retV = JSTool::createParseParameter(argc, argv)
         .Parse(label)
@@ -160,29 +115,6 @@ static JSValue js_imgui_Checkbox(JSContext* ctx, JSValueConst this_val, int argc
         return JS_ThrowTypeError(ctx, ret_str.c_str());
     }
     return JS_NewBool(ctx, ret);
-
-    //if(argc >= 2) {
-    //    auto str = JSTool::toString(argv[0]);
-    //    if(!str) return JS_ThrowTypeError(ctx, "参数1应传入字符串");
-    //    bool ret = false;
-
-    //    auto ret_str = JSTool::ReferenceBoolCall(argv[1], [&](bool* v) {
-    //        ret = ImGui::Checkbox(str->c_str(), v);
-    //    });
-    //    if(!ret_str.empty()) {
-    //        return JS_ThrowTypeError(ctx, ret_str.c_str());
-    //    }
-    //    return JS_NewBool(ctx, ret);
-
-    //    //bool open = false;
-    //    //JSValue referr = JSTool::ReferenceValue(&open, argv[1]);
-    //    //if(!JS_IsUndefined(referr)) return referr;
-
-    //    //ret = ImGui::Checkbox(str->c_str(), &open);
-    //    //JSTool::ReferenceValue(open, argv[1]);
-    //    //return JS_NewBool(ctx, ret);
-    //}
-    //return JS_ThrowTypeError(ctx, "至少需要2个参数,类型为[String, bool引用对象]");
 }
 
 static JSValue js_imgui_Toggle(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
@@ -210,51 +142,6 @@ static JSValue js_imgui_Toggle(JSContext* ctx, JSValueConst this_val, int argc, 
         return JS_ThrowTypeError(ctx, ret_str.c_str());
     }
     return JS_NewBool(ctx, ret);
-
-    //if(argc >= 2) {
-    //    auto str = JSTool::toString(argv[0]);
-    //    if(!str) return JS_ThrowTypeError(ctx, "参数1应传入字符串");
-    //    bool ret = false;
-
-
-    //    auto ret_str = JSTool::ReferenceBoolCall(argv[1], [&](bool* v) {
-    //        if(argc >= 3) {
-    //            auto v3 = JSTool::getPropXY(argv[2]);
-    //            if(!v3) {
-    //                return JS_ThrowTypeError(ctx, "参数3应传入对象{x,y}");
-    //            }
-    //            ImVec2 size = { v3->at(0),v3->at(1) };
-    //            ret = ImGui::Toggle(str->c_str(), v, size);
-    //        }
-    //        else {
-    //            ret = ImGui::Toggle(str->c_str(), v);
-    //        }
-    //    });
-    //    if(!ret_str.empty()) {
-    //        return JS_ThrowTypeError(ctx, ret_str.c_str());
-    //    }
-    //    return JS_NewBool(ctx, ret);
-
-    //    //bool open = false;
-    //    //JSValue referr = JSTool::ReferenceValue(&open, argv[1]);
-    //    //if(!JS_IsUndefined(referr)) return referr;
-
-    //    //if(argc >= 3) {
-    //    //    // 解析 xy
-    //    //    auto v = JSTool::getPropXY(argv[2]);
-    //    //    if(!v) {
-    //    //        return JS_ThrowTypeError(ctx, "参数3应传入对象{x,y}");
-    //    //    }
-    //    //    ImVec2 size = { v->at(0),v->at(1) };
-    //    //    ret = ImGui::Toggle(str->c_str(), &open, size);
-    //    //}
-    //    //else {
-    //    //    ret = ImGui::Toggle(str->c_str(), &open);
-    //    //}
-    //    //if(ret) JSTool::ReferenceValue(open, argv[1]);
-    //    //return JS_NewBool(ctx, ret);
-    //}
-    //return JS_ThrowTypeError(ctx, "至少需要2个参数,类型为[String, bool引用对象]");
 }
 
 
@@ -292,8 +179,8 @@ static JSValue js_imgui_InputFloat(JSContext* ctx, JSValueConst this_val, int ar
     bool ret = false;
     std::optional<std::string> label;
     //V
-    std::optional<float> step = 1;
-    std::optional<float> step_fast = 100;
+    std::optional<float> step = 1.f;
+    std::optional<float> step_fast = 100.f;
     std::optional<std::string> format = "%.3f";
     std::optional<int> flags = 0;
 
@@ -315,49 +202,6 @@ static JSValue js_imgui_InputFloat(JSContext* ctx, JSValueConst this_val, int ar
         return JS_ThrowTypeError(ctx, ret_str.c_str());
     }
     return JS_NewBool(ctx, ret);
-
-    //if(argc < 2) return JS_ThrowTypeError(ctx, "至少需要2个参数,类型为[String, v引用对象]");
-    //bool ret = false;
-    //std::string label;
-    //float v = 0.f;
-    //float step = 0.f;
-    //float step_fast = 0.f;
-    //std::string format = "%.3f";
-    //int flags = 0;
-
-    //auto str = JSTool::toString(argv[0]);
-    //if(!str) return JS_ThrowTypeError(ctx, "参数1应传入字符串");
-    //label = *str;
-
-    //JSValue referr = JSTool::ReferenceValue(&v, argv[1]);
-    //if(!JS_IsUndefined(referr)) return referr;
-
-    //if(argc >= 3) {
-    //    auto referr2 = JSTool::toFloat(argv[2]);
-    //    if(!referr2) return JS_ThrowTypeError(ctx, "参数3应传入float[step]");
-    //    step = *referr2;
-
-    //    if(argc >= 4) {
-    //        auto referr3 = JSTool::toFloat(argv[3]);
-    //        if(!referr3) return JS_ThrowTypeError(ctx, "参数4应传入float[step_fast]");
-    //        step_fast = *referr3;
-
-    //        if(argc >= 5) {
-    //            auto strfmt = JSTool::toString(argv[4]);
-    //            if(!strfmt) return JS_ThrowTypeError(ctx, "参数5应传入字符串");
-    //            format = *str;
-
-    //            if(argc >= 5) {
-    //                auto referr5 = JSTool::toInt(argv[5]);
-    //                if(!referr5) return JS_ThrowTypeError(ctx, "参数6应传入int[flag]");
-    //                flags = *referr5;
-    //            }
-    //        }
-    //    }
-    //}
-    //ret = ImGui::InputFloat(label.c_str(), &v, step, step_fast, format.c_str(), flags);
-    //JSTool::ReferenceValue(v, argv[1]);
-    //return JS_NewBool(ctx, ret);
 }
 
 
@@ -390,51 +234,347 @@ static JSValue js_imgui_SliderInt(JSContext* ctx, JSValueConst this_val, int arg
         return JS_ThrowTypeError(ctx, ret_str.c_str());
     }
     return JS_NewBool(ctx, ret);
-
-    //if(argc < 4) return JS_ThrowTypeError(ctx, "至少需要4个参数,类型为[String, v引用对象, int_min, int_max]");
-    //bool ret = false;
-    //std::string label;
-    //int v = 0;
-    //int min = -100;
-    //int max = 100;
-    //std::string format = "%d";
-    //int flags = 0;
-
-    //auto str = JSTool::toString(argv[0]);
-    //if(!str) return JS_ThrowTypeError(ctx, "参数1应传入字符串");
-    //label = *str;
-
-    //JSValue referr = JSTool::ReferenceValue(&v, argv[1]);
-    //if(!JS_IsUndefined(referr)) return referr;
-
-    //if(argc >= 3) {
-    //    auto referr2 = JSTool::toInt(argv[2]);
-    //    if(!referr2) return JS_ThrowTypeError(ctx, "参数3应传入int[minvalue]");
-    //    min = *referr2;
-
-    //    if(argc >= 4) {
-    //        auto referr3 = JSTool::toInt(argv[3]);
-    //        if(!referr3) return JS_ThrowTypeError(ctx, "参数4应传入int[maxvalue]");
-    //        max = *referr3;
-
-    //        if(argc >= 5) {
-    //            auto str = JSTool::toString(argv[4]);
-    //            if(!str) return JS_ThrowTypeError(ctx, "参数5应传入字符串");
-    //            format = *str;
-
-    //            if(argc >= 5) {
-    //                auto referr5 = JSTool::toInt(argv[5]);
-    //                if(!referr5) return JS_ThrowTypeError(ctx, "参数6应传入int[flag]");
-    //                flags = *referr5;
-    //            }
-    //        }
-    //    }
-    //}
-    //ret = ImGui::SliderInt(label.c_str(), &v, min, max, format.c_str(), flags);
-    //JSTool::ReferenceValue(v, argv[1]);
-    //return JS_NewBool(ctx, ret);
 }
 
+// SliderFloat控件
+static JSValue js_imgui_SliderFloat(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    bool ret = false;
+    std::optional<std::string> label;
+    std::optional<float> min;
+    std::optional<float> max;
+    std::optional<std::string> format = "%.3f";
+    std::optional<int> flags = 0;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(label)
+        .Parse()
+        .Parse(min)
+        .Parse(max)
+        .Parse(format)
+        .Parse(flags)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    auto ret_str = JSTool::ReferenceFloatCall(argv[1], [&](float* v) {
+        ret = ImGui::SliderFloat(label->c_str(), v, *min, *max, format->c_str(), *flags);
+    });
+    if(!ret_str.empty()) {
+        return JS_ThrowTypeError(ctx, ret_str.c_str());
+    }
+    return JS_NewBool(ctx, ret);
+}
+
+// Combo下拉框
+static JSValue js_imgui_Combo(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    bool ret = false;
+    std::optional<std::string> label;
+    std::optional<std::vector<std::string>> items;
+    std::optional<int> popup_max_height = -1;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(label)
+        .Parse()
+        .Parse(items)
+        .Parse(popup_max_height)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    // 转换字符串数组到C格式
+    std::vector<const char*> c_items;
+    for(auto& s : *items) {
+        c_items.push_back(s.c_str());
+    }
+
+    auto ret_str = JSTool::ReferenceIntCall(argv[1], [&](int* v) {
+        //ret = ImGui::Combo(label->c_str(), v, c_items.data(), IM_ARRAYSIZE(c_items.data()), *popup_max_height);
+        ret = ImGui::Combo(label->c_str(), v, c_items.data(), JSTool::iMin(c_items.size(), INT_MAX), *popup_max_height);
+    });
+    if(!ret_str.empty()) {
+        return JS_ThrowTypeError(ctx, ret_str.c_str());
+    }
+    return JS_NewBool(ctx, ret);
+}
+
+// ColorEdit3颜色选择器
+static JSValue js_imgui_ColorEdit3(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    bool ret = false;
+    std::optional<std::string> label;
+    std::optional<int> flags = 0;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(label)
+        .Parse()
+        .Parse(flags)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    auto ret_str = JSTool::ReferenceVec3PropCall(argv[1], [&](float* v) {
+        ret = ImGui::ColorEdit3(label->c_str(), v, *flags);
+    });
+    if(!ret_str.empty()) {
+        return JS_ThrowTypeError(ctx, ret_str.c_str());
+    }
+    return JS_NewBool(ctx, ret);
+}
+
+// RadioButton单选按钮
+static JSValue js_imgui_RadioButton(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    if(argc == 2) {
+        std::optional<std::string> label;
+        std::optional<bool> active;
+
+        auto retV = JSTool::createParseParameter(argc, argv)
+            .Parse(label)
+            .Parse(active)
+            .Build();
+        if(!retV.empty()) {
+            return JS_ThrowTypeError(ctx, retV.c_str());
+        }
+
+        bool ret = ImGui::RadioButton(label->c_str(), *active);
+        return JS_NewBool(ctx, ret);
+    }
+    else { // 三参数
+        std::optional<std::string> label;
+        std::optional<int> v_button;
+
+        bool ret = false;
+        auto retV = JSTool::createParseParameter(argc, argv)
+            .Parse(label)
+            .Parse()
+            .Parse(v_button)
+            .Build();
+        if(!retV.empty()) {
+            return JS_ThrowTypeError(ctx, retV.c_str());
+        }
+
+        auto ret_str = JSTool::ReferenceIntCall(argv[1], [&](int* v) {
+            ret = ImGui::RadioButton(label->c_str(), v, *v_button);
+        });
+        return JS_NewBool(ctx, ret);
+    }
+}
+
+// ProgressBar进度条
+static JSValue js_imgui_ProgressBar(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::optional<float> fraction;
+    std::optional<ImVec2> size_arg = ImVec2(-FLT_MIN, 0);
+    std::optional<std::string> overlay = std::string{};
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(fraction)
+        .Parse(size_arg)
+        .Parse(overlay)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    ImGui::ProgressBar(*fraction, *size_arg, overlay->empty() ? NULL : overlay->c_str());
+    return JS_UNDEFINED;
+}
+
+// ListBox列表选择框
+//    export function ListBox(label: string, current_item: (v?:number)=>number, items: string[], height_in_items?: number): Boolean;
+static JSValue js_imgui_ListBox(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    bool ret = false;
+    std::optional<std::string> label;
+    std::optional<std::vector<std::string>> items;
+    std::optional<int> height_in_items = -1;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(label)
+        .Parse()
+        .Parse(items)
+        .Parse(height_in_items)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    std::vector<const char*> c_items;
+    for(auto& s : *items) c_items.push_back(s.c_str());
+
+    auto ret_str = JSTool::ReferenceIntCall(argv[1], [&](int* v) {
+        ret = ImGui::ListBox(label->c_str(), v, c_items.data(), JSTool::iMin(c_items.size(),INT_MAX), *height_in_items);
+    });
+    if(!ret_str.empty()) {
+        return JS_ThrowTypeError(ctx, ret_str.c_str());
+    }
+    return JS_NewBool(ctx, ret);
+}
+
+// Selectable可选项
+// imgui.Selectable(label, (_ = str)=>str = _, flags:number, size?:vec_2);
+//   如果第二个参数是bool值 一下类似于没点的ul->li列表 可以控制选中效果，像按钮一样的点击效果
+// imgui.Selectable(label, seleted?:bool,flags?:number,size?:vec_2)
+//   如果第二个参数是指针类型，那么这个选择列表就是一个可多选的列表，简单来说，如果是指针，那么点击就会自动改变它的值
+//    export function Selectable(label: string, selected: (v?:boolean)=>boolean, flags?: number, size?: vec_2): Boolean;
+//    export function Selectable(label: string, selected?: boolean, flags?: number, size?: vec_2): Boolean;
+static JSValue js_imgui_Selectable(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    // 两种形式：1.带选中状态 2.仅返回点击状态
+    if(argc >= 2 && JSTool::isFun(argv[1])) {
+        bool ret = false;
+        std::optional<std::string> label;
+        std::optional<int> flags = 0;
+        std::optional<ImVec2> size = ImVec2(0, 0);
+
+        auto retV = JSTool::createParseParameter(argc, argv)
+            .Parse(label)
+            .Parse()
+            .Parse(flags)
+            .Parse(size)
+            .Build();
+        if(!retV.empty()) {
+            return JS_ThrowTypeError(ctx, retV.c_str());
+        }
+
+        auto ret_str = JSTool::ReferenceBoolCall(argv[1], [&](bool* v) {
+            ret = ImGui::Selectable(label->c_str(), v, *flags, *size);
+        });
+        if(!ret_str.empty()) {
+            return JS_ThrowTypeError(ctx, ret_str.c_str());
+        }
+        return JS_NewBool(ctx, ret);
+    }
+    else {
+        std::optional<std::string> label;
+        std::optional<bool> selected = false;
+        std::optional<int> flags = 0;
+        std::optional<ImVec2> size = ImVec2(0, 0);
+
+        auto retV = JSTool::createParseParameter(argc, argv)
+            .Parse(label)
+            .Parse(selected)
+            .Parse(flags)
+            .Parse(size)
+            .Build();
+        if(!retV.empty()) {
+            return JS_ThrowTypeError(ctx, retV.c_str());
+        }
+
+        bool ret = ImGui::Selectable(label->c_str(), *selected, *flags, *size);
+        return JS_NewBool(ctx, ret);
+    }
+}
+
+// InputText文本输入(InputTextWithHint 下面实现这个
+// ImGui.InputText("label", (_ = str: string)=>str = _,bufsize?:number, flags?:number);
+//    export function InputText(label: string,size: number, buf: (v?:string)=>string, flags?: number): Boolean;
+static JSValue js_imgui_InputText(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    bool ret = false;
+    std::optional<std::string> label;
+    std::optional<size_t> size;
+    std::optional<int> flags = 0;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(label)
+        .Parse(size)
+        .Parse()
+        .Parse(flags)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    auto ret_str = JSTool::ReferenceStringCall(argv[2],*size, [&](char* buf) {
+        ret = ImGui::InputText(label->c_str(), buf, *size, *flags);
+    });
+    if(!ret_str.empty()) {
+        return JS_ThrowTypeError(ctx, ret_str.c_str());
+    }
+    return JS_NewBool(ctx, ret);
+}
+
+// TreeNode树节点
+//    export function TreeNode(label: string, flags?: number): Boolean;
+static JSValue js_imgui_TreeNode(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::optional<std::string> label;
+    std::optional<int> flags = 0;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(label)
+        .Parse(flags)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    bool ret = ImGui::TreeNodeEx(label->c_str(), *flags);
+    return JS_NewBool(ctx, ret);
+}
+
+// TreePop树节点出栈
+//    export function TreePop():void;
+static JSValue js_imgui_TreePop(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    ImGui::TreePop();
+    return JS_UNDEFINED;
+}
+
+// CollapsingHeader折叠头
+//    export function CollapsingHeader(label: string, flags?: number): Boolean;
+static JSValue js_imgui_CollapsingHeader(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::optional<std::string> label;
+    std::optional<int> flags = 0;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(label)
+        .Parse(flags)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    bool ret = ImGui::CollapsingHeader(label->c_str(), *flags);
+    return JS_NewBool(ctx, ret);
+}
+
+// 布局控件
+//    export function Separator():void;
+static JSValue js_imgui_Separator(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    ImGui::Separator();
+    return JS_UNDEFINED;
+}
+
+// 不换行
+//    export function SameLine(offset_from_start_x?:number, spacing?:number):void;
+static JSValue js_imgui_SameLine(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::optional<float> offset = 0.0f;
+    std::optional<float> spacing = -1.0f;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(offset)
+        .Parse(spacing)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    ImGui::SameLine(*offset, *spacing);
+    return JS_UNDEFINED;
+}
+
+// 设置光标位置
+//    export function SetCursorPos(pos:vec_2):void;
+static JSValue js_imgui_SetCursorPos(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::optional<ImVec2> pos;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(pos)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    ImGui::SetCursorPos(*pos);
+    return JS_UNDEFINED;
+}
 
 static JSValue js_imgui_GetForegroundDrawList(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     ImDrawList* draw = ImGui::GetForegroundDrawList();
@@ -465,6 +605,20 @@ static const JSCFunctionListEntry js_imgui_funcs[] = {
         JS_CFUNC_DEF2("InputInt", 2, js_imgui_InputInt),
         JS_CFUNC_DEF2("InputFloat", 2, js_imgui_InputFloat),
         JS_CFUNC_DEF2("SliderInt", 4, js_imgui_SliderInt),
+        JS_CFUNC_DEF2("SliderFloat", 4, js_imgui_SliderFloat),
+        JS_CFUNC_DEF2("Combo", 3, js_imgui_Combo),
+        JS_CFUNC_DEF2("ColorEdit3", 2, js_imgui_ColorEdit3),
+        JS_CFUNC_DEF2("RadioButton", 2, js_imgui_RadioButton),
+        JS_CFUNC_DEF2("ProgressBar", 1, js_imgui_ProgressBar),
+        JS_CFUNC_DEF2("ListBox", 3, js_imgui_ListBox),
+        JS_CFUNC_DEF2("Selectable", 2, js_imgui_Selectable),
+        JS_CFUNC_DEF2("InputText", 2, js_imgui_InputText),
+        JS_CFUNC_DEF2("TreeNode", 1, js_imgui_TreeNode),
+        JS_CFUNC_DEF2("TreePop", 0, js_imgui_TreePop),
+        JS_CFUNC_DEF2("CollapsingHeader", 1, js_imgui_CollapsingHeader),
+        JS_CFUNC_DEF2("Separator", 0, js_imgui_Separator),
+        JS_CFUNC_DEF2("SameLine", 0, js_imgui_SameLine),
+        JS_CFUNC_DEF2("SetCursorPos", 1, js_imgui_SetCursorPos),
         JS_CFUNC_DEF2("GetForegroundDrawList", 0, js_imgui_GetForegroundDrawList),
         JS_CFUNC_DEF2("GetIO", 0, js_imgui_GetIO),
 };
