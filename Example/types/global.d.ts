@@ -47,6 +47,26 @@ declare interface vec_3 {
     z: number;
 }
 
+declare interface vec_4 {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+}
+
+declare interface color_3 {
+    r: number;
+    g: number;
+    b: number;
+}
+
+declare interface color_4 {
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+}
+
 /**
  * 内存指针
  */

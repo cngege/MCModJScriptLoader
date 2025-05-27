@@ -1,18 +1,66 @@
 declare module "imgui"{
     export function ShowDemoWindow(): void;
-    export function ShowDemoWindow(open: ref_bool): void;
+    export function ShowDemoWindow(open: (v?:boolean)=>boolean): void;
     export function Begin(name: string): boolean;
-    export function Begin(name: string, open: ref_bool): boolean;
-    export function Begin(name: string, open: ref_bool, flags: number): boolean;
+    export function Begin(name: string, open: (v?:boolean)=>boolean): boolean;
+    export function Begin(name: string, open: (v?:boolean)=>boolean, flags: number): boolean;
     export function End(): void;
-    export function Text(text: string): void;
+    export function Text(...text: any[]): void;
     export function Button(label: string): boolean;
     export function Button(label: string, size: vec_2): boolean;
-    export function Checkbox(label: string, checked: ref_bool): void;
-    export function Toggle(label: string, checked: ref_bool): void;
-    export function InputInt(label: string, value: ref_i, step?: number, step_fast?: number, flags?: number): Boolean;
-    export function InputFloat(label: string, value: ref_f, step?: number, step_fast?: number, format?:string, flag?:number): Boolean;
-    export function SliderInt(label: string, value: ref_i, minValue?: number, maxValue?: number, format?:string, flag?:number): Boolean;
+    export function Checkbox(label: string, checked: (v?:boolean)=>boolean): void;
+    export function Toggle(label: string, checked: (v?:boolean)=>boolean): void;
+    export function InputInt(label: string, value: (v?:number)=>number, step?: number, step_fast?: number, flags?: number): Boolean;
+    export function InputFloat(label: string, value: (v?:number)=>number, step?: number, step_fast?: number, format?:string, flag?:number): Boolean;
+    export function SliderInt(label: string, value: (v?:number)=>number, minValue: number, maxValue: number, format?:string, flag?:number): Boolean;
+    export function SliderFloat(label: string, value: (v?:number)=>number, minValue: number, maxValue: number, format?:string, flag?:number): Boolean;
+    export function Combo(label: string, value: (v?:number)=>number, list: string[], popup_max_height?:number): Boolean;
+    export function ColorEdit3(label: string, color: color_3, flags?: number): Boolean;
+    export function RadioButton(label: string, v: boolean): Boolean;
+    export function RadioButton(label: string, value: (v?:number)=>number, v_button: number): Boolean;
+    /**
+     * 进度条
+     * @param fraction [0.0, 1.0] 进度条的值 
+     * @param size_arg 进度条尺寸： - x: 宽度（负数 = 自动填充父窗口宽度） - y: 高度（0 = 默认高度）
+     * @param overlay 覆盖在进度条上的文本
+     */
+    export function ProgressBar(fraction: number, size_arg?: vec_2, overlay?: string): void;
+    /**
+     * 列出来的多选列表框
+     * @param label 提示文本
+     * @param current_item callback 函数，返回当前选中的索引
+     * @param items 下拉列表的选项数组
+     * @param height_in_items 
+     */
+    export function ListBox(label: string, current_item: (v?:number)=>number, items: string[], height_in_items?: number): Boolean;
+    /**
+     * 类似于没点的ul->li列表 可以控制选中效果，像按钮一样的点击效果
+     * @param label 提示文本
+     * @param selected callback 函数，返回当前选中状态
+     * @param flags 
+     * @param size 
+     */
+    export function Selectable(label: string, selected: (v?:boolean)=>boolean, flags?: number, size?: vec_2): Boolean;
+    /**
+     * 类似于没点的ul->li列表 可以控制选中效果，像按钮一样的点击效果
+     * @param label 提示文本
+     * @param selected 该项是否被选中
+     * @param flags 
+     * @param size 
+     */
+    export function Selectable(label: string, selected?: boolean, flags?: number, size?: vec_2): Boolean;
+    export function InputText(label: string,size: number, buf: (v?:string)=>string, flags?: number): Boolean;
+    export function TreeNode(label: string, flags?: number): Boolean;
+    export function TreePop():void;
+    /**
+     * 折叠头
+     * @param label 
+     * @param flags 
+     */
+    export function CollapsingHeader(label: string, flags?: number): Boolean;
+    export function Separator():void;
+    export function SameLine(offset_from_start_x?:number, spacing?:number):void;
+    export function SetCursorPos(pos:vec_2):void;
     export function GetForegroundDrawList(): any;
     export function GetIO(): ImGuiIO;
     export class ImGuiIO{
@@ -21,6 +69,8 @@ declare module "imgui"{
 
     export class ImGuiForegroundDrawList{
         AddLine(p1: vec_2, p2: vec_2, color: number, thickness?: number): void;
+        AddCircle(center: vec_2, radius: number, color: number, num_segments?: number, thickness?: number): void;
+        AddText(pos: vec_2, color: number, text_begin: string,text_end?:string): void;
     }
 }
 

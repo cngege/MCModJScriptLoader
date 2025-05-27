@@ -2,6 +2,7 @@
 import * as 事件系统 from '事件系统'
 import SignCode from 'SignCode'
 import * as http from 'http'
+import * as ImGui from 'imgui'
 
 interface 模块数据{
     dropCount: number;
@@ -98,6 +99,20 @@ interface 模块数据{
         玩家破坏方块Hook.hook();
     }else{
         logger.warn("玩家破坏方块特征码未找到");
+        return;
     }
+    事件系统.监听事件("onRender", () => {
+        if(模块.enable){
+            if(ImGui.Begin(模块.name)){
+                ImGui.Text("掉落物倍数");
+                ImGui.SliderInt("掉落物数量", (_ = otherdata.dropCount)=> otherdata.dropCount = _, 1, 200);
+                if(ImGui.Button("重置掉落物数量")){
+                    otherdata.dropCount = 100;
+                }
+            }
+            ImGui.End();
+        }
+    })
+
     logger.info("已成功加载模块:", 模块.name);
 })(__模块__)

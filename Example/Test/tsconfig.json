@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "outDir": "C:\\Users\\CNGEGE\\AppData\\Local\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\RoamingState\\JSRunner\\script",
+    "rootDir": "src",
+	"sourceMap": true,
+    "esModuleInterop": true,
+	"typeRoots": ["./node_modules/@types", "../types"],
+	"esModuleInterop": true,
+	"strict": true
+  },
+  "include": ["src/**/*","../types/**/*.d.ts"],  // 要包含的文件
+  "exclude": ["node_modules"]  // 要排除的文件
+}
