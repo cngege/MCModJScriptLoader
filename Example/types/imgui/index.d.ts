@@ -58,6 +58,9 @@ declare module "imgui"{
      * @param flags 
      */
     export function CollapsingHeader(label: string, flags?: number): Boolean;
+    /**
+     * 画一条横线
+     */
     export function Separator():void;
     export function SameLine(offset_from_start_x?:number, spacing?:number):void;
     export function SetCursorPos(pos:vec_2):void;

@@ -5,7 +5,7 @@ import * as http from 'http'
 import * as ImGui from 'imgui'
 
 (function(模块 : 类型_公共模块){
-    const logger = new spdlog();
+    const logger = new spdlog(模块.name);
     let sign = new SignCode("鼠标事件指针", true);
     sign.AddSign("48 8B C4 48 89 58 ? 48 89 68 ? 48 89 70 ? 57 41 54 41 55 41 56 41 57 48 83 EC ? 44 0F");
     sign.AddSignCall("E8 ? ? ? ? 40 B7 01 48 85 DB 74 ? 48");
@@ -42,5 +42,5 @@ import * as ImGui from 'imgui'
     //         return true;
     //     }
     // });
-    logger.info("已成功加载模块:", 模块.name);
+    logger.info("模块已成功加载");
 })(__模块__)

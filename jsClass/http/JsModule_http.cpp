@@ -17,9 +17,10 @@ static JSValue js_http_get_request(JSContext * ctx, JSValueConst this_val, int a
     if(argc < 1) {
         return JS_ThrowTypeError(ctx, "至少需要一个参数");
     }
-
-    std::string url = std::string(JS_ToCString(ctx, argv[0]));
+    const char* url_c = JS_ToCString(ctx, argv[0]);
+    std::string url = std::string(url_c);
     JS_FreeValue(ctx, argv[0]);
+    JS_FreeCString(ctx, url_c);
 
     // 解析数据:
     bool ishttps = false;
@@ -77,9 +78,10 @@ static JSValue js_http_post_request(JSContext* ctx, JSValueConst this_val, int a
     if(argc < 1) {
         return JS_ThrowTypeError(ctx, "至少需要一个参数");
     }
-
-    std::string url = std::string(JS_ToCString(ctx, argv[0]));
+    const char* url_c = JS_ToCString(ctx, argv[0]);
+    std::string url = std::string(url_c);
     JS_FreeValue(ctx, argv[0]);
+    JS_FreeCString(ctx, url_c);
 
     // 解析数据:
     bool ishttps = false;

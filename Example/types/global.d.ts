@@ -177,6 +177,11 @@ declare class NativePoint {
  */
 declare class spdlog{
     /**
+     * 创建一个日志对象
+     * @param name [可选]日志头名称
+     */
+    constructor(name?: string);
+    /**
      * 打印普通日志
      * @param text 打印的日志文本 
      */
@@ -196,6 +201,8 @@ declare class spdlog{
      * @param text 打印的日志文本 
      */
     debug(...text: unknown[]): void;
+
+    trace(...text: unknown[]): void;
 }
 /**
  * hook相关类

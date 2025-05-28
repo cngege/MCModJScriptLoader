@@ -5,7 +5,7 @@ import * as http from 'http'
 
 
 (function(模块 : 类型_公共模块){
-    const logger = new spdlog();
+    const logger = new spdlog(模块.name);
 
     事件系统.监听事件("onSave",function(data : any){
         data[模块.name] = {
@@ -66,5 +66,5 @@ import * as http from 'http'
     }else{
         logger.warn("新版函数_特征码未找到移动输入事件指针");
     }
-    logger.info("已成功加载模块:", 模块.name);
+    logger.info("模块已成功加载");
 })(__模块__)

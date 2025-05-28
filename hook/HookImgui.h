@@ -139,7 +139,7 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 			if(_access("C:\\Windows\\Fonts\\msyh.ttc", 0 /*F_OK*/) != -1) {
 				io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 			}
-			io.Fonts->AddFontFromFileTTF((ModManager::getMCFolderPath() / "data\\fonts\\Mojangles.ttf").string().c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+			//io.Fonts->AddFontFromFileTTF((ModManager::getMCFolderPath() / "data\\fonts\\Mojangles.ttf").string().c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 			//// 这里注意值如果不是常亮就要当心其被释放掉
 			static std::string imconfig = ModManager::getInstance()->getImConfigPath().string();
 			io.IniFilename = imconfig.c_str();
@@ -266,7 +266,7 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 				if (_access("C:\\Windows\\Fonts\\msyh.ttc", 0 /*F_OK*/) != -1) {
 					io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\msyh.ttc", 16.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 				}
-				io.Fonts->AddFontFromFileTTF((ModManager::getMCFolderPath() / "data\\fonts\\Mojangles.ttf").string().c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
+				//io.Fonts->AddFontFromFileTTF((ModManager::getMCFolderPath() / "data\\fonts\\Mojangles.ttf").string().c_str(), 15.f, NULL, io.Fonts->GetGlyphRangesChineseFull());
 				initImGuiFont = true;
 			}
 
