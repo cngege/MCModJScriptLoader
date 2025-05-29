@@ -18,27 +18,46 @@ namespace {
 }
 
 static JSValue constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
-    // 构造函数可以有1-2个参数 [string, bool]
-    if(argc < 1) {
-        return JS_ThrowTypeError(ctx, "函数需要1个参数，当前参数个数：%d", argc);
-    }
-    auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[1]));
-    std::string title = std::string(str);
-    JS_FreeCString(ctx, str);
+    // 构造函数可以有1-3个参数 [string, bool，bool]
+    std::optional<std::string> _title;
+    std::optional<bool> _printfail = true;
+    std::optional<bool> _checkAllSig = false;
 
-    bool printfail = true;
-    if(argc >= 2) {
-        if(!JS_IsBool(argv[1])) {
-            return JS_ThrowTypeError(ctx, "第二个参数必须为bool类型");
-        }
-        printfail = JS_ToBool(ctx, argv[1]);
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(_title)
+        .Parse(_printfail)
+        .Parse(_checkAllSig)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
     }
 
-    SignCode* self = new SignCode(title.c_str(), printfail);
+    SignCode* self = new SignCode(*_title, *_printfail,*_checkAllSig);
 
     JSValue obj = JS_NewObjectClass(ctx, id);
     JS_SetOpaque(obj, self);
     return obj;
+
+    //if(argc < 1) {
+    //    return JS_ThrowTypeError(ctx, "函数需要1个参数，当前参数个数：%d", argc);
+    //}
+    //auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[1]));
+    //std::string title = std::string(str);
+    //JS_FreeCString(ctx, str);
+
+    //bool printfail = true;
+    //if(argc >= 2) {
+    //    if(!JS_IsBool(argv[1])) {
+    //        return JS_ThrowTypeError(ctx, "第二个参数必须为bool类型");
+    //    }
+    //    printfail = JS_ToBool(ctx, argv[1]);
+    //}
+
+    //SignCode* self = new SignCode(title.c_str(), printfail);
+
+    //JSValue obj = JS_NewObjectClass(ctx, id);
+    //JS_SetOpaque(obj, self);
+    //return obj;
 }
 
 static JSValue isOK(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {

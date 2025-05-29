@@ -108,24 +108,29 @@ auto JSManager::loadModuleFromFile(const std::string& path) -> JSModuleDef* {
 auto JSManager::loadJSFromFoder(const std::string& folder) -> void {
     for(const auto& entry : fs::directory_iterator(ModManager::getInstance()->getPath("script") / folder)) {
         if(entry.is_regular_file() && entry.path().extension() == ".js") {
-            std::ifstream jsfile(entry.path());
-            std::string content((std::istreambuf_iterator<char>(jsfile)), std::istreambuf_iterator<char>());
-            spdlog::info("JS Loader: {}", entry.path().filename().string());
-            std::string scriptname = entry.path().filename().string();
-            // 新建一个JS对象
-            auto gobj = JS_GetGlobalObject(m_ctx);
-            onJsLoadBefore(scriptname, gobj);
+            try {
+                std::ifstream jsfile(entry.path());
+                std::string content((std::istreambuf_iterator<char>(jsfile)), std::istreambuf_iterator<char>());
+                spdlog::info("JS Loader: {}", entry.path().filename().string());
+                std::string scriptname = entry.path().filename().string();
+                // 新建一个JS对象
+                auto gobj = JS_GetGlobalObject(m_ctx);
+                onJsLoadBefore(scriptname, gobj);
 
-            JSValue val = JS_EvalThis(m_ctx, gobj, content.c_str(), content.size(), (fs::path(folder) / entry.path().filename()).string().c_str(), JS_EVAL_TYPE_MODULE);
-            onJsLoadAfter(scriptname, gobj);
-            if(JS_IsException(val)) {
-                spdlog::error("JS Loader fail: {}", entry.path().string());
-                auto result_str = JS_ErrorStackCheck(m_ctx);
-                spdlog::error(result_str);
+                JSValue val = JS_EvalThis(m_ctx, gobj, content.c_str(), content.size(), (fs::path(folder) / entry.path().filename()).string().c_str(), JS_EVAL_TYPE_MODULE);
+                onJsLoadAfter(scriptname, gobj);
+                if(JS_IsException(val)) {
+                    spdlog::error("JS Loader fail: {}", entry.path().string());
+                    auto result_str = JS_ErrorStackCheck(m_ctx);
+                    spdlog::error(result_str);
+                }
+
+                JS_FreeValue(m_ctx, val);
+                JS_FreeValue(m_ctx, gobj);
             }
-
-            JS_FreeValue(m_ctx, val);
-            JS_FreeValue(m_ctx, gobj);
+            catch(std::exception& ex) {
+                spdlog::error("加载{}时出现异常：{}", entry.path().filename().string().c_str(), ex.what());
+            }
         }
     }
     loadConfig();
@@ -537,6 +542,14 @@ bool JSTool::setPropRGBA(JSValue jsv, std::array<float, 4> v) {
     JS_FreeValue(ctx, w);
 
     return true;
+}
+
+int JSTool::setPropFunc(JSValue obj, JSCFunction* fun, std::string str, int length) {
+    auto ctx = JSManager::getInstance()->getctx();
+    JSValue jsfun = JS_NewCFunction(ctx, fun, str.c_str(), length);
+    int retv = JS_SetPropertyStr(ctx, obj, str.c_str(), jsfun);
+    //JS_FreeValue(ctx, jsfun);
+    return retv;
 }
 
 std::optional<std::vector<JSValue>> JSTool::toArray(JSValue jsv) {

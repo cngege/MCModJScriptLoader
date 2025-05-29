@@ -15,6 +15,10 @@ class SignCode {
 	*/
 	bool _printfail = true;
 	/**
+	 * @brief 即便特征码已经查找成功，依旧检查剩下的sig是否有效
+	 */
+	bool _checkallSig = false;
+	/**
 	 * @brief 用于返回的找到的特征码地址
 	*/
 	uintptr_t v = 0;
@@ -25,11 +29,11 @@ class SignCode {
 	/**
 	 * @brief 关于打印错误信息时的标题
 	*/
-	const char* _printTitle = "";
+	std::string _printTitle = "";
 	/**
 	 * @brief 成功找到地址的有效特征码
 	*/
-	const char* validMemcode = "";
+	std::string validMemcode = "";
 	/**
 	 * @brief 使用特征码直接找的没有进行偏移处理的地址
 	*/
@@ -39,7 +43,7 @@ public:
 	using SignHandle = uintptr_t(__fastcall*)(uintptr_t);
 
 	//SignCode() {};
-	SignCode(const char* title, bool printfail = true) :_printTitle(title), _printfail(printfail) {};
+	SignCode(std::string title, bool printfail = true, bool checkAllSig = false) :_printTitle(title), _printfail(printfail), _checkallSig(checkAllSig){};
 
 	operator bool() const;
 
@@ -63,7 +67,7 @@ public:
 	 * @brief 获取能成功定位到有效地址的特征码
 	 * @return
 	*/
-	const char* ValidSign() const;
+	std::string ValidSign() const;
 	/**
 	 * @brief 获取使用特征码直接找的没有进行偏移处理的地址
 	 * @return

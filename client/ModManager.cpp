@@ -26,7 +26,7 @@ auto ModManager::getCoreWindow() -> uintptr_t {
     if(corewindow) return corewindow;
 
     //0F 10 1D ? ? ? ? 0F 11 84
-    SignCode sign("Find CoreWindow Base for SignCode");
+    SignCode sign("Find CoreWindow Base for SignCode", true, true);
     sign.AddSignCall("0F 10 1D ? ? ? ? 0F 11 84", 3, [](uintptr_t p)->uintptr_t { return p + 8; });
     sign.AddSignCall("0F 11 05 ? ? ? ? 0F 10 44 24 ? 0F 11 0D", 3, [](uintptr_t p)->uintptr_t { return p + 8; });
     if(sign) {

@@ -58,43 +58,49 @@ hookClass::~hookClass() {
 
 
 void hookClass::Reg() {
-    JSContext* ctx = JSManager::getInstance()->getctx();
-    auto rt = JS_GetRuntime(ctx);
-    JS_NewClassID(&id);
-    JS_NewClass(rt, id, &_hookClass);
+    JSTool::JSClassRegister(&id, &_hookClass, _hookClass.class_name)
+        .setPropFunc(hookClass::hook, "hook")
+        .setPropFunc(hookClass::unhook, "unhook")
+        .setConstructor(hookClass::constructor)
+        .build();
 
-    JSValue protoInstance = JS_NewObject(ctx);
-    JS_SetPropertyStr(ctx, protoInstance, "hook", JS_NewCFunction(ctx, hookClass::hook, "hook", 0));
-    JS_SetPropertyStr(ctx, protoInstance, "unhook", JS_NewCFunction(ctx, hookClass::unhook, "unhook", 0));
+    //JSContext* ctx = JSManager::getInstance()->getctx();
+    //auto rt = JS_GetRuntime(ctx);
+    //JS_NewClassID(&id);
+    //JS_NewClass(rt, id, &_hookClass);
 
-    JSValue ctroInstance = JS_NewCFunction2(ctx, &hookClass::constructor, _hookClass.class_name, 0, JS_CFUNC_constructor, 0);
-    JS_SetConstructor(ctx, ctroInstance, protoInstance);
-    JS_SetClassProto(ctx, id, protoInstance);
+    //JSValue protoInstance = JS_NewObject(ctx);
+    //JS_SetPropertyStr(ctx, protoInstance, "hook", JS_NewCFunction(ctx, hookClass::hook, "hook", 0));
+    //JS_SetPropertyStr(ctx, protoInstance, "unhook", JS_NewCFunction(ctx, hookClass::unhook, "unhook", 0));
+
+    //JSValue ctroInstance = JS_NewCFunction2(ctx, &hookClass::constructor, _hookClass.class_name, 0, JS_CFUNC_constructor, 0);
+    //JS_SetConstructor(ctx, ctroInstance, protoInstance);
+    //JS_SetClassProto(ctx, id, protoInstance);
 
 
-    JSValue global_obj = JS_GetGlobalObject(ctx);
+    //JSValue global_obj = JS_GetGlobalObject(ctx);
 
-    JSValue nativeTypes = JS_NewObject(ctx);
-    JS_SetPropertyStr(ctx, global_obj, "NativeTypes", nativeTypes);
-    JS_SetPropertyStr(ctx, nativeTypes, "Void", JS_NewInt32(ctx, (int)NativeTypes::Void));
-    JS_SetPropertyStr(ctx, nativeTypes, "Bool", JS_NewInt32(ctx, (int)NativeTypes::Bool));
-    JS_SetPropertyStr(ctx, nativeTypes, "Char", JS_NewInt32(ctx, (int)NativeTypes::Char));
-    JS_SetPropertyStr(ctx, nativeTypes, "UnsignedChar", JS_NewInt32(ctx, (int)NativeTypes::UnsignedChar));
-    JS_SetPropertyStr(ctx, nativeTypes, "Short", JS_NewInt32(ctx, (int)NativeTypes::Short));
-    JS_SetPropertyStr(ctx, nativeTypes, "UnsignedShort", JS_NewInt32(ctx, (int)NativeTypes::UnsignedShort));
-    JS_SetPropertyStr(ctx, nativeTypes, "Int", JS_NewInt32(ctx, (int)NativeTypes::Int));
-    JS_SetPropertyStr(ctx, nativeTypes, "UnsignedInt", JS_NewInt32(ctx, (int)NativeTypes::UnsignedInt));
-    JS_SetPropertyStr(ctx, nativeTypes, "Long", JS_NewInt32(ctx, (int)NativeTypes::Long));
-    JS_SetPropertyStr(ctx, nativeTypes, "UnsignedLong", JS_NewInt32(ctx, (int)NativeTypes::UnsignedLong));
-    JS_SetPropertyStr(ctx, nativeTypes, "LongLong", JS_NewInt32(ctx, (int)NativeTypes::LongLong));
-    JS_SetPropertyStr(ctx, nativeTypes, "UnsignedLongLong", JS_NewInt32(ctx, (int)NativeTypes::UnsignedLongLong));
-    JS_SetPropertyStr(ctx, nativeTypes, "Float", JS_NewInt32(ctx, (int)NativeTypes::Float));
-    JS_SetPropertyStr(ctx, nativeTypes, "Double", JS_NewInt32(ctx, (int)NativeTypes::Double));
-    JS_SetPropertyStr(ctx, nativeTypes, "Pointer", JS_NewInt32(ctx, (int)NativeTypes::Pointer));
-    
+    //JSValue nativeTypes = JS_NewObject(ctx);
+    //JS_SetPropertyStr(ctx, global_obj, "NativeTypes", nativeTypes);
+    //JS_SetPropertyStr(ctx, nativeTypes, "Void", JS_NewInt32(ctx, (int)NativeTypes::Void));
+    //JS_SetPropertyStr(ctx, nativeTypes, "Bool", JS_NewInt32(ctx, (int)NativeTypes::Bool));
+    //JS_SetPropertyStr(ctx, nativeTypes, "Char", JS_NewInt32(ctx, (int)NativeTypes::Char));
+    //JS_SetPropertyStr(ctx, nativeTypes, "UnsignedChar", JS_NewInt32(ctx, (int)NativeTypes::UnsignedChar));
+    //JS_SetPropertyStr(ctx, nativeTypes, "Short", JS_NewInt32(ctx, (int)NativeTypes::Short));
+    //JS_SetPropertyStr(ctx, nativeTypes, "UnsignedShort", JS_NewInt32(ctx, (int)NativeTypes::UnsignedShort));
+    //JS_SetPropertyStr(ctx, nativeTypes, "Int", JS_NewInt32(ctx, (int)NativeTypes::Int));
+    //JS_SetPropertyStr(ctx, nativeTypes, "UnsignedInt", JS_NewInt32(ctx, (int)NativeTypes::UnsignedInt));
+    //JS_SetPropertyStr(ctx, nativeTypes, "Long", JS_NewInt32(ctx, (int)NativeTypes::Long));
+    //JS_SetPropertyStr(ctx, nativeTypes, "UnsignedLong", JS_NewInt32(ctx, (int)NativeTypes::UnsignedLong));
+    //JS_SetPropertyStr(ctx, nativeTypes, "LongLong", JS_NewInt32(ctx, (int)NativeTypes::LongLong));
+    //JS_SetPropertyStr(ctx, nativeTypes, "UnsignedLongLong", JS_NewInt32(ctx, (int)NativeTypes::UnsignedLongLong));
+    //JS_SetPropertyStr(ctx, nativeTypes, "Float", JS_NewInt32(ctx, (int)NativeTypes::Float));
+    //JS_SetPropertyStr(ctx, nativeTypes, "Double", JS_NewInt32(ctx, (int)NativeTypes::Double));
+    //JS_SetPropertyStr(ctx, nativeTypes, "Pointer", JS_NewInt32(ctx, (int)NativeTypes::Pointer));
+    //
 
-    JS_SetPropertyStr(ctx, global_obj, _hookClass.class_name, ctroInstance);
-    JS_FreeValue(ctx, global_obj);
+    //JS_SetPropertyStr(ctx, global_obj, _hookClass.class_name, ctroInstance);
+    //JS_FreeValue(ctx, global_obj);
 }
 
 void hookClass::Dispose() {

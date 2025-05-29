@@ -15,6 +15,7 @@
     }
 #endif // !JS_CFUNC_DEF2
 
+#pragma region JSManager
 
 class JSManager {
 public:
@@ -56,9 +57,88 @@ private:
     JSContext* m_ctx = nullptr;
 };
 
+#pragma endregion
+// endregion JSManager
+
+#pragma region JSTool
+
 
 class JSTool {
 public:
+    class JSClassRegister {
+        JSClassID* m_id = nullptr;
+        JSClassDef* m_class_def = nullptr;
+        const char* m_class_name;
+        JSValue m_staticObj = JS_NULL;/*protoInstance*/
+        JSValue m_thisObj = JS_NULL;/*ctroInstance*/
+    public:
+        JSClassRegister(JSClassID* id, JSClassDef* class_def, const char* class_name){
+            auto ctx = JSManager::getInstance()->getctx();
+            auto rt = JS_GetRuntime(ctx);
+            m_id = id;
+            JS_NewClassID(m_id);
+            m_class_def = class_def;
+            JS_NewClass(rt, *m_id, m_class_def);
+            m_class_name = class_name;
+            // 创建一个对象用户存放所有属性函数
+            m_staticObj = JS_NewObject(ctx);
+        }
+
+        /**
+         * @brief 设置绑定此类的构造函数
+         * @param fun C++函数
+         * @param length 期望的参数个数：0
+         * @param magic 预制的magic:0
+         * @return 当前注册类实例
+         */
+        JSClassRegister& setConstructor(JSCFunction* fun,int length = 0, int magic = 0) {
+            auto ctx = JSManager::getInstance()->getctx();
+            m_thisObj = JS_NewCFunction2(ctx, fun, m_class_name, length, JS_CFUNC_constructor, magic);
+            JS_SetConstructor(ctx, m_thisObj, m_staticObj); /*将此构造函数绑定到类中*/
+            JS_SetClassProto(ctx, *m_id, m_staticObj); /*绑定此类的id*/
+            return *this;
+        }
+        /**
+         * @brief 注册绑定一个C++类到JS属性
+         * @param fun 绑定的C++函数
+         * @param name 函数在JS中可获取的名称
+         * @param length 期望的参数个数：0
+         * @return 
+         */
+        JSClassRegister& setPropFunc(JSCFunction* fun, const char* name, int length = 0) {
+            JSTool::setPropFunc(m_staticObj, fun, name, length);
+            return *this;
+        }
+        /**
+         * @brief 将此类作为objJS对象的属性类
+         * @param obj 如果obj是默认值JS_NULL,则绑定到公共对象上
+         */
+        void build(JSValue obj = JS_NULL) {
+            auto ctx = JSManager::getInstance()->getctx();
+            if(JS_IsNull(obj)) {
+                JSValue m_glboalObj = JS_GetGlobalObject(ctx);
+                JS_SetPropertyStr(ctx, m_glboalObj, m_class_name, m_thisObj);
+                JS_FreeValue(ctx, m_glboalObj);
+            }else{
+                JS_SetPropertyStr(ctx, obj, m_class_name, m_thisObj);
+            }
+
+            JS_FreeValue(ctx, m_staticObj);
+            JS_FreeValue(ctx, m_thisObj);
+        }
+        /**
+         * @brief 将此类注册实例的接口返回，可供模块调用
+         * @return 
+         */
+        JSValue buildToModule() {
+            auto ctx = JSManager::getInstance()->getctx();
+            JS_FreeValue(ctx, m_thisObj);
+            return m_staticObj;
+        }
+
+        ~JSClassRegister() {}
+    };
+
 
     /**
      * @brief 尝试从JS值中读取字符串
@@ -137,6 +217,17 @@ public:
      * @param
      */
     static bool setPropRGBA(JSValue, std::array<float, 4>);
+
+    /**
+     * @brief 给属性添加一个字符串对象对象为函数
+     * @param  父对象
+     * @param fun 绑定的C++函数
+     * @param str 映射到JS的函数名称
+     * @param length 期待的参数数量(默认0)
+     * @return 
+     */
+    static int setPropFunc(JSValue, JSCFunction* fun, std::string str,int length = 0);
+    //static int setPropFunc(JSValue, JSCFunction* fun, const char* str, int length = 0, int magic = 0);
 
     /**
      * @brief 尝试从JS值中以数组的方式读取, 并尝试转为C++数组
@@ -456,3 +547,9 @@ inline JSTool::Param& JSTool::Param::Parse(std::optional<T>& ref) {
 
     return *this;
 }
+
+
+#pragma endregion   
+// endregion JSTool
+
+
