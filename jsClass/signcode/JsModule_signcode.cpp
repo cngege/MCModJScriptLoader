@@ -1,4 +1,4 @@
-﻿#include "JsModule_signcode.h"
+﻿#include "quickjs/quickjs.h"
 #include <string>
 
 #include "../JSManager.h"
@@ -158,24 +158,34 @@ static JSValue AddSignCall(JSContext* ctx, JSValueConst newTarget, int argc, JSV
 
 
 static auto SignCode_Module_Reg() -> JSValue {
-    JSContext* ctx = JSManager::getInstance()->getctx();
-    auto rt = JS_GetRuntime(ctx);
-    JS_NewClassID(&id);
-    JS_NewClass(rt, id, &_SignCodeClass);
+    return JSTool::JSClassRegister(&id, &_SignCodeClass, _SignCodeClass.class_name)
+        .setPropFunc(isOK, "isOK")
+        .setPropFunc(get, "get")
+        .setPropFunc(ValidSign, "ValidSign")
+        .setPropFunc(ValidPtr, "ValidPtr")
+        .setPropFunc(AddSign, "AddSign")
+        .setPropFunc(AddSignCall, "AddSignCall")
+        .setConstructor(constructor)
+        .buildToModule();
 
-    JSValue protoInstance = JS_NewObject(ctx);
-    JS_SetPropertyStr(ctx, protoInstance, "isOK", JS_NewCFunction(ctx, isOK, "isOK", 0));
-    JS_SetPropertyStr(ctx, protoInstance, "get", JS_NewCFunction(ctx, get, "get", 0));
-    JS_SetPropertyStr(ctx, protoInstance, "ValidSign", JS_NewCFunction(ctx, ValidSign, "ValidSign", 0));
-    JS_SetPropertyStr(ctx, protoInstance, "ValidPtr", JS_NewCFunction(ctx, ValidPtr, "ValidPtr", 0));
-    JS_SetPropertyStr(ctx, protoInstance, "AddSign", JS_NewCFunction(ctx, AddSign, "AddSign", 0));
-    JS_SetPropertyStr(ctx, protoInstance, "AddSignCall", JS_NewCFunction(ctx, AddSignCall, "AddSignCall", 0));
+    //JSContext* ctx = JSManager::getInstance()->getctx();
+    //auto rt = JS_GetRuntime(ctx);
+    //JS_NewClassID(&id);
+    //JS_NewClass(rt, id, &_SignCodeClass);
 
-    JSValue ctroInstance = JS_NewCFunction2(ctx, &constructor, _SignCodeClass.class_name, 0, JS_CFUNC_constructor, 0);
-    JS_SetConstructor(ctx, ctroInstance, protoInstance);
-    JS_SetClassProto(ctx, id, protoInstance);
+    //JSValue protoInstance = JS_NewObject(ctx);
+    //JS_SetPropertyStr(ctx, protoInstance, "isOK", JS_NewCFunction(ctx, isOK, "isOK", 0));
+    //JS_SetPropertyStr(ctx, protoInstance, "get", JS_NewCFunction(ctx, get, "get", 0));
+    //JS_SetPropertyStr(ctx, protoInstance, "ValidSign", JS_NewCFunction(ctx, ValidSign, "ValidSign", 0));
+    //JS_SetPropertyStr(ctx, protoInstance, "ValidPtr", JS_NewCFunction(ctx, ValidPtr, "ValidPtr", 0));
+    //JS_SetPropertyStr(ctx, protoInstance, "AddSign", JS_NewCFunction(ctx, AddSign, "AddSign", 0));
+    //JS_SetPropertyStr(ctx, protoInstance, "AddSignCall", JS_NewCFunction(ctx, AddSignCall, "AddSignCall", 0));
 
-    return ctroInstance;
+    //JSValue ctroInstance = JS_NewCFunction2(ctx, &constructor, _SignCodeClass.class_name, 0, JS_CFUNC_constructor, 0);
+    //JS_SetConstructor(ctx, ctroInstance, protoInstance);
+    //JS_SetClassProto(ctx, id, protoInstance);
+
+    //return ctroInstance;
 }
 
 static int js_signcode_init(JSContext* ctx, JSModuleDef* m) {

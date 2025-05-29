@@ -1,5 +1,4 @@
-﻿#include "JsModule_http.h"
-#include "quickjs/quickjs.h"
+﻿#include "quickjs/quickjs.h"
 #include "../JSManager.h"
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT

@@ -105,8 +105,8 @@ public:
          * @param length 期望的参数个数：0
          * @return 
          */
-        JSClassRegister& setPropFunc(JSCFunction* fun, const char* name, int length = 0) {
-            JSTool::setPropFunc(m_staticObj, fun, name, length);
+        JSClassRegister& setPropFunc(JSCFunction* fun, std::string name, int length = 0) {
+            JSTool::setPropFunc(m_staticObj, fun, name.c_str(), length);
             return *this;
         }
         /**
@@ -132,8 +132,8 @@ public:
          */
         JSValue buildToModule() {
             auto ctx = JSManager::getInstance()->getctx();
-            JS_FreeValue(ctx, m_thisObj);
-            return m_staticObj;
+            JS_FreeValue(ctx, m_staticObj);
+            return m_thisObj;
         }
 
         ~JSClassRegister() {}
