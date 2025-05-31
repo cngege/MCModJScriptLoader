@@ -245,6 +245,11 @@ static char JSNativecall(DCCallback* cb, DCArgs* args, DCValue* result, void* us
         }
         JS_FreeValue(ctx, global_obj);
         paras.clear();
+        if(JS_IsException(ret) || JS_IsError(ctx, ret)) {
+            spdlog::error("执行JS中的hook函数出现异常:{}", JSManager::getInstance()->getErrorStack().c_str());
+            result->p = (void*)0;
+            return hookClass::getTypeSignature(NativeTypes::Pointer);
+        }
 
         // 然后返回值类型去解析返回值，将返回值写入到 result 返回
         switch(userData->agreeOn[0]) {
