@@ -535,11 +535,24 @@ static JSValue js_imgui_CollapsingHeader(JSContext* ctx, JSValueConst this_val, 
     return JS_NewBool(ctx, ret);
 }
 
-// 布局控件
+// 布局控件 画一条线
 //    export function Separator():void;
 static JSValue js_imgui_Separator(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     ImGui::Separator();
     return JS_UNDEFINED;
+}
+
+// 布局控件
+//    export function Separator():void;
+static JSValue js_imgui_SeparatorText(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    if(argc >= 1) {
+        auto toStr = JSTool::toString(argv[0]);
+        if(toStr) {
+            ImGui::SeparatorText(toStr->c_str());
+            return JS_UNDEFINED;
+        }
+    }
+    return JS_ThrowTypeError(ctx, "参数不足或无法转为字符串");
 }
 
 // 不换行
@@ -560,6 +573,13 @@ static JSValue js_imgui_SameLine(JSContext* ctx, JSValueConst this_val, int argc
     return JS_UNDEFINED;
 }
 
+// 空出一定空间
+//    export function Spacing():void;
+static JSValue js_imgui_Spacing(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    ImGui::Spacing();
+    return JS_UNDEFINED;
+}
+
 // 设置光标位置
 //    export function SetCursorPos(pos:vec_2):void;
 static JSValue js_imgui_SetCursorPos(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
@@ -574,6 +594,112 @@ static JSValue js_imgui_SetCursorPos(JSContext* ctx, JSValueConst this_val, int 
 
     ImGui::SetCursorPos(*pos);
     return JS_UNDEFINED;
+}
+
+static JSValue js_imgui_IsItemFocused(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewBool(ctx, ImGui::IsItemFocused());
+}
+
+static JSValue js_imgui_IsItemHovered(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    if(argc == 0) {
+        return JS_NewBool(ctx, ImGui::IsItemHovered());
+    }
+    else {
+        auto toInt = JSTool::toInt(argv[0]);
+        if(!toInt) return JS_ThrowTypeError(ctx, "参数1 无法转为Int");
+        return JS_NewBool(ctx, ImGui::IsItemHovered(*toInt));
+    }
+}
+
+static JSValue js_imgui_IsItemActive(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewBool(ctx, ImGui::IsItemActive());
+}
+
+static JSValue js_imgui_IsItemEdited(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewBool(ctx, ImGui::IsItemEdited());
+}
+
+static JSValue js_imgui_IsItemActivated(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewBool(ctx, ImGui::IsItemActivated());
+}
+
+static JSValue js_imgui_IsItemDeactivated(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewBool(ctx, ImGui::IsItemDeactivated());
+}
+
+static JSValue js_imgui_IsItemDeactivatedAfterEdit(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewBool(ctx, ImGui::IsItemDeactivatedAfterEdit());
+}
+
+static JSValue js_imgui_IsItemVisible(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewBool(ctx, ImGui::IsItemVisible());
+}
+
+static JSValue js_imgui_IsItemClicked(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    if(argc == 0) {
+        return JS_NewBool(ctx, ImGui::IsItemClicked());
+    }
+    else {
+        auto toInt = JSTool::toInt(argv[0]);
+        if(!toInt) return JS_ThrowTypeError(ctx, "参数1 无法转为Int");
+        return JS_NewBool(ctx, ImGui::IsItemClicked(*toInt));
+    }
+}
+
+static JSValue js_imgui_IsItemToggledOpen(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewBool(ctx, ImGui::IsItemToggledOpen());
+}
+
+static JSValue js_imgui_GetItemRectMin(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    ImVec2 xy = ImGui::GetItemRectMin();
+    JSValue obj = JS_NewObject(ctx);
+    if(!JSTool::setPropXY(obj, { xy.x, xy.y })) {
+        return JS_ThrowTypeError(ctx, "创建一个对象并设置属性 x y时失败");
+    }
+    return obj;
+}
+
+static JSValue js_imgui_GetItemRectMax(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    ImVec2 xy = ImGui::GetItemRectMax();
+    JSValue obj = JS_NewObject(ctx);
+    if(!JSTool::setPropXY(obj, { xy.x, xy.y })) {
+        return JS_ThrowTypeError(ctx, "创建一个对象并设置属性 x y时失败");
+    }
+    return obj;
+}
+
+static JSValue js_imgui_GetItemRectSize(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    ImVec2 xy = ImGui::GetItemRectSize();
+    JSValue obj = JS_NewObject(ctx);
+    if(!JSTool::setPropXY(obj, { xy.x, xy.y })) {
+        return JS_ThrowTypeError(ctx, "创建一个对象并设置属性 x y时失败");
+    }
+    return obj;
+}
+
+// 设置剪切板文本
+//    export function SetClipboardText(pos:vec_2):void;
+static JSValue js_imgui_SetClipboardText(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::optional<std::string> text;
+
+    auto retV = JSTool::createParseParameter(argc, argv)
+        .Parse(text)
+        .Build();
+    if(!retV.empty()) {
+        return JS_ThrowTypeError(ctx, retV.c_str());
+    }
+
+    ImGui::SetClipboardText(text->c_str());
+    return JS_UNDEFINED;
+}
+
+
+
+// 获取剪切板文本
+//    export function GetClipboardText():string;
+static JSValue js_imgui_GetClipboardText(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::string clip_t = ImGui::GetClipboardText();
+    return JSTool::fromString(clip_t);
 }
 
 static JSValue js_imgui_GetForegroundDrawList(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
@@ -617,8 +743,25 @@ static const JSCFunctionListEntry js_imgui_funcs[] = {
         JS_CFUNC_DEF2("TreePop", 0, js_imgui_TreePop),
         JS_CFUNC_DEF2("CollapsingHeader", 1, js_imgui_CollapsingHeader),
         JS_CFUNC_DEF2("Separator", 0, js_imgui_Separator),
+        JS_CFUNC_DEF2("SeparatorText", 1, js_imgui_SeparatorText),
         JS_CFUNC_DEF2("SameLine", 0, js_imgui_SameLine),
+        JS_CFUNC_DEF2("Spacing", 0, js_imgui_Spacing),
         JS_CFUNC_DEF2("SetCursorPos", 1, js_imgui_SetCursorPos),
+        JS_CFUNC_DEF2("IsItemFocused", 0,js_imgui_IsItemFocused),
+        JS_CFUNC_DEF2("IsItemHovered", 0,js_imgui_IsItemHovered),
+        JS_CFUNC_DEF2("IsItemActive", 0,js_imgui_IsItemActive),
+        JS_CFUNC_DEF2("IsItemEdited", 0,js_imgui_IsItemEdited),
+        JS_CFUNC_DEF2("IsItemActivated", 0,js_imgui_IsItemActivated),
+        JS_CFUNC_DEF2("IsItemDeactivated", 0,js_imgui_IsItemDeactivated),
+        JS_CFUNC_DEF2("IsItemDeactivatedAfterEdit", 0,js_imgui_IsItemDeactivatedAfterEdit),
+        JS_CFUNC_DEF2("IsItemVisible", 0,js_imgui_IsItemVisible),
+        JS_CFUNC_DEF2("IsItemClicked", 0,js_imgui_IsItemClicked),
+        JS_CFUNC_DEF2("IsItemToggledOpen", 0,js_imgui_IsItemToggledOpen),
+        JS_CFUNC_DEF2("GetItemRectMin", 0,js_imgui_GetItemRectMin),
+        JS_CFUNC_DEF2("GetItemRectMax", 0,js_imgui_GetItemRectMax),
+        JS_CFUNC_DEF2("GetItemRectSize", 0,js_imgui_GetItemRectSize),
+        JS_CFUNC_DEF2("SetClipboardText", 1, js_imgui_SetClipboardText),
+        JS_CFUNC_DEF2("GetClipboardText", 0, js_imgui_GetClipboardText),
         JS_CFUNC_DEF2("GetForegroundDrawList", 0, js_imgui_GetForegroundDrawList),
         JS_CFUNC_DEF2("GetIO", 0, js_imgui_GetIO),
 };
