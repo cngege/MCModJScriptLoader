@@ -29,12 +29,27 @@
 #include "jsClass/hook/hookClass.h"
 #include "jsClass/nativePoint/nativePointClass.h"
 
+// TODO:使用 '#' 符号开头表示github 包
+// TODO:...
 static JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, void* opaque) {
-    if(std::string(module_name).ends_with(".js") || std::string(module_name).ends_with(".ts")) {
-        return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string());
+    std::string module = module_name;
+    if(std::string(module_name).starts_with("http://") || std::string(module_name).starts_with("https://")) {
+        std::string url = module_name;
+        return JSManager::getInstance()->loadModuleFromHttp(url);
     }
     else {
-        return js_module_loader(ctx, module_name, opaque);
+        if(module.ends_with(".js") || module.ends_with(".mjs")) {                                                // 如果是以JS或者TS结尾
+            return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string());
+        }
+        else if(fs::exists(ModManager::getInstance()->getPath("script") / (module + ".js"))) {                                                                                     // 如果补全.js后文件存在
+            return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string() + ".js");
+        }
+        else if(fs::exists(ModManager::getInstance()->getPath("script") / (module + ".mjs"))) {                                                                                    // 如果补全 ".mjs" 后文件存在
+            return JSManager::getInstance()->loadModuleFromFile((ModManager::getInstance()->getPath("script") / module_name).string() + ".mjs");
+        }
+        else {
+            return js_module_loader(ctx, module_name, opaque);
+        }
     }
 }
 

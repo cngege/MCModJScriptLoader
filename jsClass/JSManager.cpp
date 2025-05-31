@@ -10,6 +10,10 @@
 #include "imgui/imgui.h"
 #include "imgui/imgui_uwp_wndProc.h"
 
+#define CPPHTTPLIB_OPENSSL_SUPPORT
+#include "http/httplib.h"
+#include <regex>
+
 static std::string JS_ErrorStackCheck(JSContext* ctx) {
     JSValue err = JS_GetException(ctx);
     std::string result_str = JSManager::getInstance()->getErrorStack(err);
@@ -100,6 +104,65 @@ auto JSManager::loadModuleFromFile(const std::string& path) -> JSModuleDef* {
     }
     catch(std::exception& e) {
         spdlog::error("加载模块时出现错误:{} of {} in {}",e.what(), __FUNCTION__, __LINE__);
+        return nullptr;
+    }
+}
+
+auto JSManager::loadModuleFromHttp(const std::string& url) -> JSModuleDef* {
+    static std::unordered_map<std::size_t, JSModuleDef*> onlyLoad{};
+    try {
+        // 网络协议开头
+        std::regex pattern(
+            R"(^(?:(\w+):\/\/)?)"    // 协议 (可选)
+            R"(([^/?#:]+(:\d+)?))"   // 主机+端口 (必需)
+            R"((\/[^ ]*)?$)"          // 路径 (可选)
+        );
+        std::smatch match;
+        if(std::regex_match(url, match, pattern)) {
+            std::string host_port = match[2].str();
+            std::string path = match[4].matched ? match[4].str() : "/";
+
+            httplib::Client http(host_port);
+            if(!http.is_valid()) {
+                spdlog::error("载入模块[{}]时,网址的链接无法解析主机和端口", url.c_str());
+                JS_ThrowReferenceError(m_ctx, "无法解析模块主机和端口");
+                return nullptr;
+            }
+            http.set_follow_location(true);
+            http.enable_server_certificate_verification(false);
+            auto ret = http.Get(path);
+            if(ret->status != httplib::StatusCode::OK_200) {
+                spdlog::error("载入模块[{}]时,链接请求结果为:{}", url.c_str(), ret->status);
+                JS_ThrowReferenceError(m_ctx, "远程模块请求结尾非为200");
+                return nullptr;
+            }
+            std::string content = ret->body;
+            
+            std::size_t hasx = std::hash<std::string>()(content);
+            // 从map缓存中找 是否被加载过了
+            auto it = onlyLoad.find(hasx);
+            if(it != onlyLoad.end()) {
+                return it->second;
+            }
+            JSValue val = JS_Eval(m_ctx, content.c_str(), content.size(), path.c_str(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY/* | JS_EVAL_TYPE_MASK*/);
+            if(JS_IsException(val)) {
+                spdlog::error("JS Module Loader fail: {}", path);
+                auto result_str = JS_ErrorStackCheck(m_ctx);
+                spdlog::error(result_str);
+                return nullptr;
+            }
+            js_module_set_import_meta(m_ctx, val, true, true);
+            JSModuleDef* module = (JSModuleDef*)JS_VALUE_GET_PTR(val);
+            onlyLoad[hasx] = module;
+            JS_FreeValue(m_ctx, val);
+            return module;
+        }
+        spdlog::error("载入模块[{}]时, 正则匹配此网址失败", url.c_str());
+        JS_ThrowReferenceError(m_ctx, "正则匹配网址失败");
+        return nullptr;
+    }
+    catch(std::exception& e) {
+        spdlog::error("加载模块时出现错误:{} of {} in {}", e.what(), __FUNCTION__, __LINE__);
         return nullptr;
     }
 }

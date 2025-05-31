@@ -29,6 +29,8 @@ public:
     auto freeNativeModule(JSRuntime*) -> void;
     // 加载某个JS模块
     auto loadModuleFromFile(const std::string&) -> JSModuleDef*;
+    // 加载首个远程模块
+    auto loadModuleFromHttp(const std::string&) -> JSModuleDef*;
     // 从文件夹中加载JS
     auto loadJSFromFoder(const std::string & = "") -> void;
     // 每个 JS脚本加载之前执行的事件
