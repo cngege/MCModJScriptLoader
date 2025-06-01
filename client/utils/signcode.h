@@ -19,6 +19,10 @@ class SignCode {
 	 */
 	bool _checkallSig = false;
 	/**
+	 * @brief 如果为true并且 _checkallSig 启用，则在检查特征码时判断最终结果于首个有效值是否相差过大
+	 */
+	bool _judgeDifference = true;
+	/**
 	 * @brief 用于返回的找到的特征码地址
 	*/
 	uintptr_t v = 0;
@@ -42,8 +46,16 @@ class SignCode {
 public:
 	using SignHandle = uintptr_t(__fastcall*)(uintptr_t);
 
-	//SignCode() {};
-	SignCode(std::string title, bool printfail = true, bool checkAllSig = false) :_printTitle(title), _printfail(printfail), _checkallSig(checkAllSig){};
+	/**
+	 * @brief 特征码查找工具
+	 * @param title 标题，用于输出提示信息时区别不同的SignCode
+	 * @param printfail 是否在部分特征码无效时警告
+	 * @param checkAllSig 是否即使已经查找到结果后依旧检查其他特征码
+	 * @param judgeDifference 检查其他特征码时 是否检查结果与最初有效值是否区别太大
+	 */
+	SignCode(std::string title, bool printfail = true, bool checkAllSig = false, bool judgeDifference = true) :
+		_printTitle(title), _printfail(printfail), _checkallSig(checkAllSig), _judgeDifference(judgeDifference)
+	{};
 
 	operator bool() const;
 

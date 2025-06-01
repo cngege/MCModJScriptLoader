@@ -65,10 +65,11 @@ void SignCode::AddSign(const char* sign, std::function<uintptr_t(uintptr_t)> han
                     return;
                 }
                 else {
-                    // 如果最终有效地址与首个有效地址相差超过 0x10000 字节, 则告警
-                    if(std::abs((long long)(v - _v)) > 0x10000) {
-                        spdlog::warn("SignCode Warn: {} 特征码与Call均查找成功({}) 但此最终值与首个有效值相差甚大(0x10000)", this->_printTitle, this->findCount);
-                        return;
+                    if(_judgeDifference) {                    // 如果最终有效地址与首个有效地址相差超过 0x10000 字节, 则告警
+                        if(std::abs((long long)(v - _v)) > 0x10000) {
+                            spdlog::warn("SignCode Warn: {} 特征码与Call均查找成功({}) 但此最终值与首个有效值相差甚大(0x10000)", this->_printTitle, this->findCount);
+                            return;
+                        }
                     }
                 }
             }
@@ -101,17 +102,19 @@ void SignCode::AddSignCall(const char* sign, int offset, std::function<uintptr_t
         else {
             _v = Mem::funcFromSigOffset(_v, offset);
             if(handle != nullptr) {
-                _v = handle(v);
+                _v = handle(_v);
                 if(_v == 0) {
                     success = false;
                     spdlog::warn("SignCode Warn: {} 特征码查找成功({}) 但Call检查失败", this->_printTitle, this->findCount);
                     return;
                 }
                 else {
-                    // 如果最终有效地址与首个有效地址相差超过 0x10000 字节, 则告警
-                    if(std::abs((long long)(v - _v)) > 0x10000) {
-                        spdlog::warn("SignCode Warn: {} 特征码与Call均查找成功({}) 但此最终值与首个有效值相差甚大(0x10000)", this->_printTitle, this->findCount);
-                        return;
+                    if(_judgeDifference) {
+                        // 如果最终有效地址与首个有效地址相差超过 0x10000 字节, 则告警
+                        if(std::abs((long long)(v - _v)) > 0x10000) {
+                            spdlog::warn("SignCode Warn: {} 特征码与Call均查找成功({}) 但此最终值与首个有效值相差甚大(0x10000)", this->_printTitle, this->findCount);
+                            return;
+                        }
                     }
                 }
             }

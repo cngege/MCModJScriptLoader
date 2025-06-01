@@ -22,17 +22,19 @@ static JSValue constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSV
     std::optional<std::string> _title;
     std::optional<bool> _printfail = true;
     std::optional<bool> _checkAllSig = false;
+    std::optional<bool> _judgeDifference = true;
 
     auto retV = JSTool::createParseParameter(argc, argv)
         .Parse(_title)
         .Parse(_printfail)
         .Parse(_checkAllSig)
+        .Parse(_judgeDifference)
         .Build();
     if(!retV.empty()) {
         return JS_ThrowTypeError(ctx, retV.c_str());
     }
 
-    SignCode* self = new SignCode(*_title, *_printfail,*_checkAllSig);
+    SignCode* self = new SignCode(*_title, *_printfail,*_checkAllSig,*_judgeDifference);
 
     JSValue obj = JS_NewObjectClass(ctx, id);
     JS_SetOpaque(obj, self);
@@ -99,7 +101,7 @@ static JSValue AddSign(JSContext* ctx, JSValueConst newTarget, int argc, JSValue
                 return JS_ThrowTypeError(ctx, "第二个参数应该为回调函数(number)=>number");
             }
             thi->AddSign(str.value().c_str(), [&](uintptr_t v) {
-                JSValue jsv[] = { JS_NewInt64(ctx, thi->ValidPtr()) };
+                JSValue jsv[] = { JS_NewInt64(ctx, v) };
                 JSValue callret = JS_Call(ctx, argv[1], newTarget, 1, jsv);
                 auto ret = JSTool::toInt64(callret);
                 if(!ret) {
@@ -138,7 +140,7 @@ static JSValue AddSignCall(JSContext* ctx, JSValueConst newTarget, int argc, JSV
                 return JS_ThrowTypeError(ctx, "第三个参数应该为回调函数(number)=>number");
             }
             thi->AddSignCall(str.value().c_str(), offset, [&](uintptr_t v) {
-                JSValue jsv[] = { JS_NewInt64(ctx, thi->ValidPtr()) };
+                JSValue jsv[] = { JS_NewInt64(ctx, v) };
                 JSValue callret = JS_Call(ctx, argv[2], newTarget, 1, jsv);
                 auto ret = JSTool::toInt64(callret);
                 if(!ret) {
