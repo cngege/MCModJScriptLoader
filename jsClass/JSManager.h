@@ -71,8 +71,8 @@ public:
         JSClassID* m_id = nullptr;
         JSClassDef* m_class_def = nullptr;
         const char* m_class_name;
-        JSValue m_staticObj = JS_NULL;/*protoInstance*/
-        JSValue m_thisObj = JS_NULL;/*ctroInstance*/
+        JSValue protoInstance = JS_NULL;/*protoInstance*/
+        JSValue ctroInstance = JS_NULL;/*ctroInstance*/
     public:
         JSClassRegister(JSClassID* id, JSClassDef* class_def, const char* class_name){
             auto ctx = JSManager::getInstance()->getctx();
@@ -83,7 +83,7 @@ public:
             JS_NewClass(rt, *m_id, m_class_def);
             m_class_name = class_name;
             // 创建一个对象用户存放所有属性函数
-            m_staticObj = JS_NewObject(ctx);
+            protoInstance = JS_NewObject(ctx);
         }
 
         /**
@@ -95,9 +95,9 @@ public:
          */
         JSClassRegister& setConstructor(JSCFunction* fun,int length = 0, int magic = 0) {
             auto ctx = JSManager::getInstance()->getctx();
-            m_thisObj = JS_NewCFunction2(ctx, fun, m_class_name, length, JS_CFUNC_constructor, magic);
-            JS_SetConstructor(ctx, m_thisObj, m_staticObj); /*将此构造函数绑定到类中*/
-            JS_SetClassProto(ctx, *m_id, m_staticObj); /*绑定此类的id*/
+            ctroInstance = JS_NewCFunction2(ctx, fun, m_class_name, length, JS_CFUNC_constructor, magic);
+            JS_SetConstructor(ctx, ctroInstance, protoInstance); /*将此构造函数绑定到类中*/
+            JS_SetClassProto(ctx, *m_id, protoInstance); /*绑定此类的id*/
             return *this;
         }
         /**
@@ -108,7 +108,7 @@ public:
          * @return 
          */
         JSClassRegister& setPropFunc(JSCFunction* fun, std::string name, int length = 0) {
-            JSTool::setPropFunc(m_staticObj, fun, name.c_str(), length);
+            JSTool::setPropFunc(protoInstance, fun, name.c_str(), length);
             return *this;
         }
         /**
@@ -119,14 +119,14 @@ public:
             auto ctx = JSManager::getInstance()->getctx();
             if(JS_IsNull(obj)) {
                 JSValue m_glboalObj = JS_GetGlobalObject(ctx);
-                JS_SetPropertyStr(ctx, m_glboalObj, m_class_name, m_thisObj);
+                JS_SetPropertyStr(ctx, m_glboalObj, m_class_name, ctroInstance);
                 JS_FreeValue(ctx, m_glboalObj);
             }else{
-                JS_SetPropertyStr(ctx, obj, m_class_name, m_thisObj);
+                JS_SetPropertyStr(ctx, obj, m_class_name, ctroInstance);
             }
 
-            JS_FreeValue(ctx, m_staticObj);
-            JS_FreeValue(ctx, m_thisObj);
+            JS_FreeValue(ctx, protoInstance);
+            JS_FreeValue(ctx, ctroInstance);
         }
         /**
          * @brief 将此类注册实例的接口返回，可供模块调用
@@ -134,8 +134,8 @@ public:
          */
         JSValue buildToModule() {
             auto ctx = JSManager::getInstance()->getctx();
-            JS_FreeValue(ctx, m_staticObj);
-            return m_thisObj;
+            JS_FreeValue(ctx, protoInstance);
+            return ctroInstance;
         }
 
         ~JSClassRegister() {}
