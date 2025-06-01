@@ -3,6 +3,7 @@
 #include "spdlog/spdlog.h"
 #include "../JSManager.h"
 #include "../client/mem/mem.h"
+#include <Windows.h>
 
 #define NOMINMAX
 
@@ -56,6 +57,10 @@ void nativePointClass::Reg() {
         .setPropFunc(nativePointClass::setstring, "setstring")
         .setPropFunc(nativePointClass::setbytes, "setbytes")
         .setPropFunc(nativePointClass::getCstring, "getcstring")
+        .setPropFunc(nativePointClass::copyToArrayBuffer, "copyToArrayBuffer")
+        .setPropFunc(nativePointClass::toArrayBuffer, "toArrayBuffer")
+        .setPropFunc(nativePointClass::fillArrayBuffer, "fillArrayBuffer")
+        .setPropFunc(nativePointClass::setVirtualProtect, "setVirtualProtect")
         .setConstructor(&nativePointClass::constructor)
         .build();
 
@@ -200,7 +205,6 @@ JSValue nativePointClass::constructor(JSContext* ctx, JSValueConst newTarget, in
         JSValue obj = JSTool::getConstructorValue(newTarget, id);
         JS_SetOpaque(obj, (void*)(uintptr_t)self);
         return obj;
-        //return FromPtr((uintptr_t)self);
     }
 
     self = new nativePointClass(ptr);
@@ -522,7 +526,7 @@ JSValue nativePointClass::setstring(JSContext* ctx, JSValueConst newTarget, int 
 
 JSValue nativePointClass::setbytes(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
     nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
-    if(argc < 1) return JS_ThrowTypeError(ctx, "需要接收一个字符串参数");
+    if(argc < 1) return JS_ThrowTypeError(ctx, "需要接收一个number数组参数");
     try {
         auto str = JSTool::getArray<char8_t>(argv[0], [=](size_t size, JSValue jsv) {
             auto toint = JSTool::toInt(jsv);
@@ -719,4 +723,90 @@ JSValue nativePointClass::call(JSContext* ctx, JSValueConst newTarget, int argc,
 JSValue nativePointClass::toNumber(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
     nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
     return JS_NewInt64(ctx, thi->m_ptr);
+}
+
+JSValue nativePointClass::copyToArrayBuffer(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+    nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+    if(argc < 1) {
+        return JS_ThrowTypeError(ctx, "至少需要一个number类型参数");
+    }
+    auto size = JSTool::toInt64(argv[0]);
+    if(!size) {
+        return JS_ThrowTypeError(ctx, "无法转为 number");
+    }
+    return JS_NewArrayBufferCopy(ctx, (uint8_t*)thi->m_ptr, *size);
+}
+
+JSValue nativePointClass::toArrayBuffer(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+    nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+    if(argc < 1) {
+        return JS_ThrowTypeError(ctx, "至少需要一个number类型参数");
+    }
+    auto size = JSTool::toInt64(argv[0]);
+    if(!size) {
+        return JS_ThrowTypeError(ctx, "无法转为 number");
+    }
+    return JS_NewArrayBuffer(ctx, (uint8_t*)thi->m_ptr, *size, NULL, thi, true/*true:内存由其他对象管理释放,false:内存由js引擎中的本对象管理释放*/);
+}
+// 使用字节数组进行填充
+JSValue nativePointClass::fillArrayBuffer(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+    nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+    if(argc < 1) {
+        return JS_ThrowTypeError(ctx, "至少需要[ArrayBuffer,?number]个参数");
+    }
+    size_t offset, length = 0;// offset 是view_data 在初始位置的偏移量, length是view_data的长度
+    size_t pbytes_per_element;//每个元素所占的字节数 Uint8Array为1 Float32Array 为4
+    // 读取buff并转为数组
+    JSValue buffer = JS_GetTypedArrayBuffer(ctx, argv[0], &offset, &length, &pbytes_per_element);
+    if(JS_IsException(buffer)) {
+        return buffer;
+    }
+    if(pbytes_per_element != 1) {
+        JS_FreeValue(ctx, buffer);
+        return JS_ThrowTypeError(ctx, "只接受 Uint8Array");
+    }
+    // 将buff具体转为数组
+    size_t total_size = 0;
+    uint8_t* buf_data = JS_GetArrayBuffer(ctx, &total_size, buffer);
+    if(!buf_data) {
+        JS_FreeValue(ctx, buffer);
+        return JS_ThrowTypeError(ctx, "转为uint8_t[]失败");
+    }
+    // 如果指定了第二个参数明确了填充大小时
+    if(argc >= 2) {
+        auto nsize = JSTool::toInt64(argv[1]);
+        if(!nsize) return JS_ThrowTypeError(ctx, "参数二不是 number 类型");
+        if(*nsize > length) {
+            return JS_ThrowTypeError(ctx, "指定要填充的长度小于 buffer 的长度");
+        }
+        length = *nsize;
+    }
+    // 起始地址 + offset = view_data
+    uint8_t* view_data = buf_data + offset;
+    // 复制到原始指针
+    for(size_t i = 0; i < length; i++) {
+        ((uint8_t*)thi->m_ptr)[i] = view_data[i];
+    }
+    return JS_UNDEFINED;
+}
+
+// 设置内存页读写状态
+JSValue nativePointClass::setVirtualProtect(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+    nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+    std::optional<size_t> size;
+    std::optional<int> status;
+
+    std::string err = JSTool::createParseParameter(argc, argv)
+        .Parse(size)
+        .Parse(status)
+        .Build();
+    if(!err.empty()){
+        return JS_ThrowTypeError(ctx, "错误 %s", err.c_str());
+    }
+    DWORD oldProtect;
+    BOOL ret = VirtualProtect(thi, *size, *status, &oldProtect);
+    if(ret) {
+        return JS_NewInt32(ctx, (int32_t)oldProtect);
+    }
+    return JS_NULL;
 }

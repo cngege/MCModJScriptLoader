@@ -222,6 +222,27 @@ declare class NativePoint {
      * 指针强转C语言类型字符串 (const char*)thi->m_ptr;
      */
     getcstring(): string;
+    /**
+     * 复制到ArrayBuffer数组中,对其修改不影响原指针
+     */    
+    copyToArrayBuffer():ArrayBuffer;
+    /**
+     * 同指针映射到ArrayBuffer数组中,修改会影响源地址,注意只能在原对象生命周期内修改完成
+     */
+    toArrayBuffer():ArrayBuffer;
+    /**
+     * 使用buffer填充到指针中
+     * @param array 
+     * @param size  填充大小,不能大于 array长度 
+     */
+    fillArrayBuffer(array: Uint8Array, size?:number):void;
+    /**
+     * 设置内存页是否可以读写执行
+     * @param size 修改的范围
+     * @param status 状态值,具体值可以参考：https://learn.microsoft.com/zh-cn/windows/win32/Memory/memory-protection-constants
+     * @returns 旧的内存页状态值,为null表示失败
+     */
+    setVirtualProtect(size: number, status: number):number|null;
 }
 
 /**

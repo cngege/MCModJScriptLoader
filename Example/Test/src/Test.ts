@@ -132,47 +132,21 @@ import GuiData from './module/GuiData'
                     ImGui.SameLine(); ImGui.Text("GuiData: " , ClientInstance.GetGuiData().toNumber().toString(16));
                     ImGui.Text("VTF: " , ClientInstance.GetGuiData().getulong().toString(16));
                 }
+                if(ImGui.Button("打印ClientInstance::getTopScreenName")){
+                    logger.info(ClientInstance.GetTopScreenName());
+                }
             }
 
-            if(ImGui.Button("打印ClientInstance::getTopScreenName")){
-                logger.info(ClientInstance.GetTopScreenName());
-            }
-            if(ImGui.Button("输出客户端文本消息")){
-                //let a = ClientInstance.GetGuiData().toNumber();
-                //new GuiData(a).displayClientMessage("asdfafasdfaf");
-                //if(a != 0) (new GuiData2(a)).print();
-                
-                //let a = new TestClass(123)
-                //let a = new GuiData2(123)
-                //a.print();
-                
-                // let a = ClientInstance.GetGuiData().toNumber();
-                // // // logger.warn(a.toString(16));
-                // let b = new GuiData(a);
-                // b.displayClientMessage("测试输出文本消息");
-                ClientInstance.GetGuiData().displayClientMessage("测试输出文本消息");
-
-                // let sign = new SignCode("输出客户端文本消息", true, true, true);
-                // sign.AddSign("40 55 53 56 57 41 56 48 8D AC ? ? ? ? ? 48 81 ? ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 85 ? ? ? ? 41 0F B6 F9 49 8B");
-                // //sign.AddSignCall("41 B1 ? 4C 8D 45 ? 48 8D 55 ? E8 ? ? ? ? 90 80 7D ? 00 74 ? 48 8B 55 ? 48 83 FA ? 76 ? 48 FF C2 48 8B 4D ? 48 8B C1 48 81 FA 00 10 00 00", 12);
-                // sign.AddSignCall("4C 8D 45 ? 48 8D 55 ? E8 ? ? ? ? 90 80 7D ? 00 74", 9);
-                // sign.AddSignCall("48 8D 95 ? ? ? ? E8 ? ? ? ? 90 48 85 FF 74 ? BB", 8);
-                // sign.AddSignCall("4D 8B C6 48 8B D7 E8 ? ? ? ? 90 BE FF FF FF FF", 7);
-                // if(sign.isOK()){
-                //     //sign.get();
-                //     let _message = new NativePoint(0, 32);
-                //     _message.setstring("测试字符串 阿斯顿发放就");
-                //     let _optionalParam = new NativePoint(0, 1+7+32);
-                //     if(false){
-                //         _optionalParam.setbool(true);
-                //         _optionalParam.offset(8).setstring("这是什么");
-                //     }else{
-                //         _optionalParam.setbool(false);
-                //     }
-                //     let call = new NativePoint(sign.get());
-                //     call.setAgree([NativeTypes.Void, NativeTypes.UnsignedLongLong, NativeTypes.Pointer, NativeTypes.Pointer, NativeTypes.Bool]);
-                //     call.call(a, _message, _optionalParam, false);
-                // }
+            if(ImGui.CollapsingHeader("6/2")){
+                if(ImGui.Button("输出客户端文本消息")){
+                    ClientInstance.GetGuiData().displayClientMessage("测试输出文本消息");
+                    new ArrayBuffer()
+                }
+                if(ImGui.Button("text")){
+                    if (typeof ArrayBuffer !== 'undefined') {
+                        logger.info("ArrayBuffer 可用");
+                    }
+                }
             }
         }
         ImGui.End();
@@ -180,6 +154,18 @@ import GuiData from './module/GuiData'
 
     logger.info("已成功加载模块:", 模块.name);
 })(__模块__)
+
+/**
+ArrayBuffer 构造函数            ✅          new ArrayBuffer(10)
+TypedArray 视图                 ✅          new Uint8Array(buffer)
+DataView                        ✅          new DataView(buffer)
+字节操作和转换                  ✅           new Float32Array(buffer)
+子数组切片                      ✅          buffer.slice(2, 8)
+ArrayBuffer.isView()            ✅          ArrayBuffer.isView(new Uint8Array())
+.byteLength 属性                ✅          buffer.byteLength
+.maxByteLength 属性 (ES2020)    ✅          new ArrayBuffer(10, {maxByteLength: 20})
+.grow()/.resize() 方法	        ✅          buffer.grow(15)
+ */
 
 // 48 8D 05 ? ? ? ? 48 89 ? BA ? ? ? ? 44
 // 使用上述地址找，能找到两个，一般第一个是本地玩家析构地址对应的虚表位置，第二个是服务玩家析构地址对应的虚表位置

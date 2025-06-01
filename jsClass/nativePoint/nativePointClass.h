@@ -87,6 +87,10 @@ private:
 
 	static JSValue call(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue toNumber(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue copyToArrayBuffer(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue toArrayBuffer(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue fillArrayBuffer(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue setVirtualProtect(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 private:
 	DCCallVM_* m_vm = nullptr;

@@ -693,8 +693,6 @@ static JSValue js_imgui_SetClipboardText(JSContext* ctx, JSValueConst this_val, 
     return JS_UNDEFINED;
 }
 
-
-
 // 获取剪切板文本
 //    export function GetClipboardText():string;
 static JSValue js_imgui_GetClipboardText(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
@@ -702,9 +700,17 @@ static JSValue js_imgui_GetClipboardText(JSContext* ctx, JSValueConst this_val, 
     return JSTool::fromString(clip_t);
 }
 
+// 获取鼠标光标
+static JSValue js_imgui_GetMouseCursor(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewInt32(ctx, ImGui::GetMouseCursor());
+}
+
+
+
+#pragma region Other
 static JSValue js_imgui_GetForegroundDrawList(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     ImDrawList* draw = ImGui::GetForegroundDrawList();
-    
+
     JSValue obj = JS_NewObjectClass(ctx, JSForegroundDrawList::getForegroundDrawListID());
     JS_SetOpaque(obj, draw);
     return obj;
@@ -716,7 +722,7 @@ static JSValue js_imgui_GetIO(JSContext* ctx, JSValueConst this_val, int argc, J
     JS_SetOpaque(obj, io);
     return obj;
 }
-
+#pragma endregion
 
 
 static const JSCFunctionListEntry js_imgui_funcs[] = {
@@ -762,6 +768,7 @@ static const JSCFunctionListEntry js_imgui_funcs[] = {
         JS_CFUNC_DEF2("GetItemRectSize", 0,js_imgui_GetItemRectSize),
         JS_CFUNC_DEF2("SetClipboardText", 1, js_imgui_SetClipboardText),
         JS_CFUNC_DEF2("GetClipboardText", 0, js_imgui_GetClipboardText),
+        JS_CFUNC_DEF2("GetMouseCursor", 0, js_imgui_GetMouseCursor),
         JS_CFUNC_DEF2("GetForegroundDrawList", 0, js_imgui_GetForegroundDrawList),
         JS_CFUNC_DEF2("GetIO", 0, js_imgui_GetIO),
 };
