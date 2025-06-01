@@ -52,6 +52,8 @@ void nativePointClass::Reg() {
         .setPropFunc(nativePointClass::setpoint, "setpoint")
         .setPropFunc(nativePointClass::getpoint, "getpoint")
         .setPropFunc(nativePointClass::getstring, "getstring")
+        .setPropFunc(nativePointClass::setstring, "setstring")
+        .setPropFunc(nativePointClass::setbytes, "setbytes")
         .setPropFunc(nativePointClass::getCstring, "getcstring")
         .setConstructor(&nativePointClass::constructor)
         .build();
@@ -506,6 +508,40 @@ JSValue nativePointClass::getstring(JSContext* ctx, JSValueConst newTarget, int 
     nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
     std::string& str = *(std::string*)thi->m_ptr;
     return JS_NewString(ctx, str.c_str());
+}
+
+JSValue nativePointClass::setstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+    nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+    if(argc < 1) return JS_ThrowTypeError(ctx, "需要接收一个字符串参数");
+    auto str = JSTool::toString(argv[0]);
+    if(!str)  return JS_ThrowTypeError(ctx, "参数无法转为字符串");
+    *(std::string*)thi->m_ptr = *str;
+    return JS_UNDEFINED;
+}
+
+JSValue nativePointClass::setbytes(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+    nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+    if(argc < 1) return JS_ThrowTypeError(ctx, "需要接收一个字符串参数");
+    try {
+        auto str = JSTool::getArray<char8_t>(argv[0], [=](size_t size, JSValue jsv) {
+            auto toint = JSTool::toInt(jsv);
+            if(!toint) throw std::runtime_error("无法转为Int(Char)类型");
+            if(*toint > 255 || *toint < -127) throw std::runtime_error("参数值超出范围, 请限定在char值范围");
+            return static_cast<char8_t>(*toint);
+        });
+        if(!str) {
+            throw std::runtime_error("异常情况，无法转为char数组");
+        }
+        int i = 0;
+        for(auto item : *str) {
+            *(char*)(thi->m_ptr + i) = item;
+            i++;
+        }
+    }
+    catch(std::exception& ex) {
+        return JS_ThrowTypeError(ctx, ex.what());
+    }
+    return JS_UNDEFINED;
 }
 
 JSValue nativePointClass::getCstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {

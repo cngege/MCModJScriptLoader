@@ -80,6 +80,8 @@ private:
 	static JSValue getpoint(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 	static JSValue getstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue setstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue setbytes(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue getCstring(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 
