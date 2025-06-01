@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <shared_mutex>
 
+#include "nlohmann/Json.hpp"
 
 namespace fs = std::filesystem;
 
@@ -48,6 +49,9 @@ public:
     auto trySafeExceptions(const std::exception&) -> void;
 
     auto disableMod(uintptr_t) -> void;
+
+    auto readConfig() -> nlohmann::json;
+    auto writeConfig(nlohmann::json config) -> bool;
 
 private:
     bool modState = 0;

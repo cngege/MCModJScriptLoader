@@ -3,7 +3,7 @@
 #include "spdlog/spdlog.h"
 #include "utils/signcode.h"
 #include <shared_mutex>
-
+#include <fstream>
 
 ModManager* ModManager::getInstance() {
     static ModManager instance{};
@@ -153,6 +153,23 @@ auto ModManager::trySafeExceptions(const std::exception& e) -> void {
 
 auto ModManager::disableMod(uintptr_t modhandle) -> void {
     
+}
+
+auto ModManager::readConfig() -> nlohmann::json {
+    std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in);
+    if(!configFileR.is_open()) return NULL;
+    nlohmann::json config = {};
+    configFileR >> config;
+    configFileR.close();
+    return config;
+}
+
+auto ModManager::writeConfig(nlohmann::json config) -> bool {
+    std::ofstream configFileW(ModManager::getInstance()->getOtherPath("ModConfig"));
+    if(!configFileW.is_open()) return false;
+    configFileW << std::setw(4) << config << std::endl;
+    configFileW.close();
+    return true;
 }
 
 

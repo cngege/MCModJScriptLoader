@@ -141,7 +141,7 @@ static auto start(HMODULE hModule) -> void {
             break;
         case spdlog::level::err:
             GetImguiConsole()->AddLog("[error] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
-            GetImguiConsole()->MainOpen = true;
+            if(spdlog::get_level() <= 1) GetImguiConsole()->MainOpen = true;
             break;
         case spdlog::level::debug:
             GetImguiConsole()->AddLog("[debug] %s", std::string(msg.payload.begin(), msg.payload.end()).c_str());
@@ -158,8 +158,15 @@ static auto start(HMODULE hModule) -> void {
     }));
     spdlog::set_default_logger(file_logger);
 
-    spdlog::set_level(spdlog::level::debug);
-    spdlog::flush_on(spdlog::level::debug);  // 日志保存等级
+    nlohmann::json config = ModManager::getInstance()->readConfig();
+    if(config == NULL || !config.contains("log_level")) {
+        spdlog::set_level(spdlog::level::info);
+        spdlog::flush_on(spdlog::level::info);  // 日志保存等级
+    }
+    else {
+        spdlog::set_level((spdlog::level::level_enum)config["log_level"]);
+        spdlog::flush_on((spdlog::level::level_enum)config["log_level"]);
+    }
     spdlog::info("日志部分完工撒花..");
     
     ImguiHooks::InitImgui();

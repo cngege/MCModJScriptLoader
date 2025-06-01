@@ -4,7 +4,7 @@
 #include "imgui.h"
 #include "../client/ModManager.h"
 #include "../jsClass/JSManager.h"
-
+#include "nlohmann/Json.hpp"
 
 
 // Portable helpers
@@ -27,6 +27,8 @@ struct ExampleAppConsole
     bool                  ShowDemoWindow;
     bool                  ScrollToBottom;
     bool                  MainOpen=false;
+    std::vector<const char*> LogLevel = { "Trace","Debug", "Info", "Warn", "Error", "CRITICAL", "Off" };
+    int                   SelectLogLevel = -1;
 
     ExampleAppConsole() {
         //IMGUI_DEMO_MARKER("Examples/Console");
@@ -105,6 +107,16 @@ struct ExampleAppConsole
             ImGui::Checkbox("输入框", &InputBox);
             ImGui::Checkbox("打印Debug", &PrintDebug);
             ImGui::Checkbox("Demo窗口", &ShowDemoWindow);
+            if(ImGui::Combo("设置日志等级(自动保存)", &SelectLogLevel, LogLevel.data(), static_cast<int>(LogLevel.size()))) {
+                // 保存和设置
+                spdlog::set_level((spdlog::level::level_enum)SelectLogLevel);
+                spdlog::flush_on((spdlog::level::level_enum)SelectLogLevel);  // 日志保存等级
+                nlohmann::json config = ModManager::getInstance()->readConfig();
+                if(config != NULL) {
+                    config["log_level"] = SelectLogLevel;
+                    ModManager::getInstance()->writeConfig(config);
+                }
+            }
             ImGui::EndPopup();
         }
 
@@ -119,8 +131,10 @@ struct ExampleAppConsole
 
         ImGui::SameLine();
         // Options, Filter ,Script
-        if(ImGui::SmallButton("选项"))
+        if(ImGui::SmallButton("选项")) {
+            SelectLogLevel = spdlog::get_level();
             ImGui::OpenPopup("Options");
+        }
 
         ImGui::SameLine();
         if(ImGui::SmallButton("脚本"))
