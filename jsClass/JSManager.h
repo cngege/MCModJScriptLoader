@@ -49,8 +49,6 @@ public:
     auto onImGuiRenderScriptSig() -> void;
     // 存粹的外部ImGui渲染
     auto onImGuiRender() -> void;
-    // 使用事件系统注册一个事件，时JS的鼠标Hook能传递到程序中
-    auto registerImGuiMouseHandle() -> void;
 
     auto initJSManager()->void;
     auto disableJSManager() -> void;
@@ -74,14 +72,17 @@ public:
         JSValue protoInstance = JS_NULL;/*protoInstance*/
         JSValue ctroInstance = JS_NULL;/*ctroInstance*/
     public:
-        JSClassRegister(JSClassID* id, JSClassDef* class_def, const char* class_name){
+        JSClassRegister(JSClassID* id, JSClassDef* class_def, const char* class_name = nullptr){
             auto ctx = JSManager::getInstance()->getctx();
             auto rt = JS_GetRuntime(ctx);
             m_id = id;
             JS_NewClassID(m_id);
             m_class_def = class_def;
             JS_NewClass(rt, *m_id, m_class_def);
-            m_class_name = class_name;
+            if(class_name == nullptr)
+                m_class_name = class_def->class_name;
+            else
+                m_class_name = class_name;
             // 创建一个对象用户存放所有属性函数
             protoInstance = JS_NewObject(ctx);
         }
@@ -230,6 +231,15 @@ public:
      */
     static int setPropFunc(JSValue, JSCFunction* fun, std::string str,int length = 0);
     //static int setPropFunc(JSValue, JSCFunction* fun, const char* str, int length = 0, int magic = 0);
+    
+    /**
+     * @brief 专门用于构造函数获取一个支持继承的原型链
+     * @param thisObj 构造函数的this对象
+     * @param id 当前内置类的id
+     * @param inheritance 是否允许被继承(true)
+     * @return 此值最终作为返回值return
+     */
+    static JSValue getConstructorValue(JSValue thisObj, JSClassID id, bool inheritance = true);
 
     /**
      * @brief 尝试从JS值中以数组的方式读取, 并尝试转为C++数组

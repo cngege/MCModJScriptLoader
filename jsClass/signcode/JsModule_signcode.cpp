@@ -36,7 +36,7 @@ static JSValue constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSV
 
     SignCode* self = new SignCode(*_title, *_printfail,*_checkAllSig,*_judgeDifference);
 
-    JSValue obj = JS_NewObjectClass(ctx, id);
+    JSValue obj = JSTool::getConstructorValue(newTarget, id);
     JS_SetOpaque(obj, self);
     return obj;
 

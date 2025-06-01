@@ -48,6 +48,7 @@ public:
     // 收到异常后打印并停止dll
     auto trySafeExceptions(const std::exception&) -> void;
 
+    auto registerImGuiMouseHandle() -> void;
     auto disableMod(uintptr_t) -> void;
 
     auto readConfig() -> nlohmann::json;

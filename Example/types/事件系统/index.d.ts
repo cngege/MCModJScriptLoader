@@ -16,6 +16,6 @@ declare module "事件系统" {
    * @param sig 
    * @param callback 
    */
-  export function 事件广播(sig: string, callback : (ret : boolean) => void): void;
-  export function 事件广播(sig: string, callback : (ret : boolean) => void, ...args: any[]): void;
+  export function 事件广播(sig: string, callback : ((ret : boolean) => void) | null): void;
+  export function 事件广播(sig: string, callback : ((ret : boolean) => void) | null, ...args: any[]): void;
 }

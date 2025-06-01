@@ -36,41 +36,41 @@ interface 模块数据{
 
     //logger.setLevel(spdlog.Level.Debug);
     const findTopCall = (ptr:number)=>{
-        for(let i = 0; i < 300; i++){
-            if(new NativePoint(ptr - i).getchar() == 0xCC){
+        for(let i = 0; i < 908; i++){   // 908 字节, 这函数差不多这么长
+            if(new NativePoint(ptr - i).getuchar() == 0xCC){
                 return ptr - i + 1;
             }
         }
         return 0;
     }
 
-    let sign_玩家破坏方块 = new SignCode("玩家破坏方块特征码", true);
+    let sign_玩家破坏方块 = new SignCode("玩家破坏方块特征码", true, true);
     sign_玩家破坏方块.AddSign("48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 ? 4D 8B E8 4C 8B F2 4C 8B F9");
     sign_玩家破坏方块.AddSignCall("E8 ? ? ? ? E9 ? ? ? ? 49 8B CE E8 ? ? ? ? 48 85");
     sign_玩家破坏方块.AddSignCall("75 ? 4D 8B ? 48 8B 57 ? 49 8B CE E8", 13);
 
     sign_玩家破坏方块.AddSign("48 8B ? ? 48 85 ? 0F 84 ? ? ? ? ? ? 40 38 B7", findTopCall);
-    sign_玩家破坏方块.AddSign("80 BB ? ? ? ? 00 75 ? E8 ? ? ? ? 84 ? 74 ? 48 8B 83 ? ? ? ? 48 8B 93 ? ? ? ? 48 3B ? 74 ? 48 8B 08 80 79 ? ? 74 ? 48 83 C0 ? 48 3B C2 75 ? EB", findTopCall);
+    sign_玩家破坏方块.AddSign("75 ? 48 8D 8F ? ? ? ? E8 ? ? ? ? 84 ? 74 ? 48 8B 9F ? ? ? ? 48 8B BF ? ? ? ? 48 3B ? 74 ? 66 ? 48 8B", findTopCall);
     sign_玩家破坏方块.AddSign("48 85 ? 74 ? F2 41 0F 10 45 00 F2 0F 11 45 ? 41", findTopCall);
     sign_玩家破坏方块.AddSign("41 8B 45 ? 89 45 ? 48 8D ? ? ? ? ? 48 89 45 ? 4C", findTopCall);
-    sign_玩家破坏方块.AddSign("4C 89 75 ? 48 89 7D ? 48 8B ? 48", findTopCall);
+    sign_玩家破坏方块.AddSign("4C 89 75 ? 4C 89 7D ? 48 8B ? 48", findTopCall);
     sign_玩家破坏方块.AddSign("48 8D 55 ? 48 8B 40 ? FF 15 ? ? ? ? 90 49 8B 8E", findTopCall);
     sign_玩家破坏方块.AddSign("48 8B 80 ? ? ? ? FF 15 ? ? ? ? 84 ? 0F 85 ? ? ? ? 49 8B CE", findTopCall);
-    sign_玩家破坏方块.AddSign("E8 ? ? ? ? 4C 8B ? 0F 57 ? 33 ? 0F 11 45 ? 48 89 45 ? 49", findTopCall);
-    sign_玩家破坏方块.AddSign("49 8B CE E8 ? ? ? ? 4C 8B ? 0F 57 ? F3 0F 7F 45 ? 33", findTopCall);
-    sign_玩家破坏方块.AddSign("48 89 4D ? 48 83 C0 ? 4D 85 ? 48 0F 44 ? 8D", findTopCall);
-    sign_玩家破坏方块.AddSign("8D 71 ? 48 85 ? 74 ? 48 8B 48", findTopCall);
+    sign_玩家破坏方块.AddSign("E8 ? ? ? ? 4C 8B ? 0F 57 ? 33 ? 0F 11 45 ? 48 89 45 ? 49 8B 96 ? ? ? ? 48", findTopCall);
+    sign_玩家破坏方块.AddSign("48 85 ? 74 ? 48 8B ? 48 8B 81 ? ? ? ? 48 8B ? FF 15 ? ? ? ? 48 8B ? EB ? 48 8B ? E9", findTopCall);
+    sign_玩家破坏方块.AddSign("65 48 8B ? ? ? ? ? ? 48 8B ? B8 ? ? ? ? 80 3C ? 00 75 ? E8 ? ? ? ? BF ? ? ? ? 48 ? ? 0F 57 ? F3 0F 7F 45 ? 48", findTopCall);
+    sign_玩家破坏方块.AddSign("48 8D 47 ? 48 85 ? 48 0F 44 ? BE", findTopCall);
     sign_玩家破坏方块.AddSign("48 85 ? 74 ? F0 FF 41 ? 48 8B 48 ? 48 8B 40 ? 48 89 45 ? 48 8B 5D ? 48 89 4D ? 48 85 ? 74 ? 8B C6 F0 0F C1 ? ? 83 F8 ? 75 ? 48 8B ? 48 8B ? 48 8B ? FF ? ? ? ? ? 8B C6 F0 0F C1 43 ? 83 F8 ? 75 ? 48 8B ? 48 8B ? 48 8B 40 ? FF ? ? ? ? ? 48", findTopCall);
-    sign_玩家破坏方块.AddSign("74 ? 4C 89 7D ? 49", findTopCall);
+    sign_玩家破坏方块.AddSign("48 83 7D ? ? 74 ? 48 89 7D ? 49", findTopCall);
     sign_玩家破坏方块.AddSign("49 8B 96 ? ? ? ? 80 BA ? ? ? ? ? 75 ? 48 8B 8A ? ? ? ? 48 8B ? 8B 52 ? 48 8B 40 ? FF 15 ? ? ? ? 48 8B ? EB ? 48 8D 1D", findTopCall);
     sign_玩家破坏方块.AddSign("49 8B ? ? 48 8D ? ? 49 8B ? 48 8B ? ? ? ? ? FF ? ? ? ? ? 8B", findTopCall);
-    sign_玩家破坏方块.AddSign("45 ? ? 44 89 7D ? C7 45 ? ? ? ? ? 48 89", findTopCall);
+    sign_玩家破坏方块.AddSign("C7 45 ? 00 00 00 00 C7 45 ? ? ? ? ? 48 89 5D ? F2", findTopCall);
     sign_玩家破坏方块.AddSign("F2 41 0F 10 ? ? F2 0F 11 45 ?  41 8B 4D ? 89 4D ? 89 45 E3", findTopCall);
     sign_玩家破坏方块.AddSign("4C 89 65 ? 49 8B ? ? 49 8B ? 48 8B 80 ? ? ? ? FF ? ? ? ? ? 48 8B", findTopCall);
-    sign_玩家破坏方块.AddSign("48 8B ? 48 8B ? ? ? ? ? 48 8B ? FF ? ? ? ? ? 84 ? 75 ? 48 8B ? ? 48 85 ? 0F 84 ? ? ? ? 48 8D 45 ? 48 89 44 24 ? 48 8D 45 ? 48 89 44 24 ? 4C 8B ? 4D 8B ? 49", findTopCall);
-    sign_玩家破坏方块.AddSign("E8 ? ? ? ? 90 4C 89 7D ? 48 8B 7D ? 49 8B ? 48 89 5D ? 48 85 ? 74 ? 8B ? F0 0F C1 ? ? 83 F8 ? 75 ? 48 8B ? 48 8B ? 48 8B ? FF ? ? ? ? ? 8B ? F0 0F C1 ? ? 83 F8 ? 75 ? 48 8B ? 48 8B ? 48 8B ? ? FF 15 ? ? ? ? 48 8B 5D ? 4C 89 ? ? 48 85 ? 74 ? 8B ? F0 0F C1 ? ? 83 F8 ? 75 ? 48 8B ? 48 8B ? 48 8B ? FF 15 ? ? ? ? F0 0F", findTopCall);
+    sign_玩家破坏方块.AddSign("48 8B ? 48 8B ? 48 8B ? ? ? ? ? 48 8B ? FF ? ? ? ? ? 84 ? 75 ? 49 8B ? ? 48 85 ? 0F 84 ? ? ? ? 48 8D 45 ? 48 89 44 24 ? 48 8D 45 ? 48 89 44 24 ? 4D 8B ? 4D 8B ? 49 8B ? E8 ? ? ? ? 90 45 33", findTopCall);
+    sign_玩家破坏方块.AddSign("E8 ? ? ? ? 90 45 33 ? 4C 89 7D ? 48 8B 7D ? 41 8B ? 48 89 5D ? 48 85 ? 74 ? 8B", findTopCall);
     sign_玩家破坏方块.AddSign("83 ? ? 75 ? 48 8B ? 48 8B ? 48 8B 40 ? FF 15 ? ? ? ? 49 8D 4E ? E8 ? ? ? ? 48", findTopCall);
-    sign_玩家破坏方块.AddSign("74 ? F3 0F 10 ? ? 49 8B ? E8 ? ? ? ? 48 8B 4D ? 48 33 ? E8",findTopCall);
+    sign_玩家破坏方块.AddSign("74 ? F3 0F ? ? ? 49 8B ? E8 ? ? ? ? 48 8B ? ? 48 ? ? E8 ? ? ? ? 48",findTopCall);
 
     if(sign_玩家破坏方块.isOK()){
         let 玩家破坏方块Hook : HookBase = new HookBase(function(block : number, player : number, pos : number){
@@ -131,20 +131,4 @@ interface 模块数据{
     logger.info("模块已成功加载");
 })(__模块__)
 
-// 48 8D 05 ? ? ? ? 48 89 ? BA ? ? ? ? 44
-// 使用上述地址找，能找到两个，一般第一个是本地玩家析构地址对应的虚表位置，第二个是服务玩家析构地址对应的虚表位置
 
-// 本地玩家虚表地址
-/**
- * 48 8D 05 ? ? ? ? 49 89 04 ? 49 8D 8C +3 (应该是构造函数)
- * 48 8D 05 ? ? ? ? 48 89 ? BA ? ? ? ? 44 8D 4A ? 44 8D 42 ? 66 C7 44 +3（应该是析构函数）
- */
-
-// 服务玩家虚表地址
-/**
- * 48 8D 05 ? ? ? ? 48 89 ? 8B 85 ? ? ? ? 89 87 +3
- * 
- */
-
-//void* CI::TICK(ci*)
-// 40 53 48 83 EC ? 48 8B ? 48 8B 89 ? ? ? ? 48 8B ? 48 8B 80 ? ? ? ? FF ? ? ? ? ? 84 ? 75 ? 48

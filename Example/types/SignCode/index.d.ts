@@ -3,15 +3,12 @@ declare module "SignCode" {
   export default class SignCode{
     /**
      * 特征码查询工具
-     * @param title 此次查找实例的标题
-     */
-    constructor(title : string);
-    /**
-     * 特征码查询工具
-     * @param title 此次查找实例的标题
+     * @param title 此处查找实例的标题
      * @param printfail 是否打印失败信息(默认 true)
+     * @param checkAllSig 即便查找成功,是否继续查找所有特征码,检查特征码是否失效(默认 false)
+     * @param judgeDifference 是否检查当前查找值与最初有效值是否差别过大0x10000(默认 true)
      */
-    constructor(title : string, printfail : boolean);
+    constructor(title : string, printfail? : boolean, checkAllSig? : boolean, judgeDifference? : boolean);
     /**
      * 特征码组是否查询成功
      */

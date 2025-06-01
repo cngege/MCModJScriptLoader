@@ -62,8 +62,25 @@ declare module "imgui"{
      * 画一条横线
      */
     export function Separator():void;
+    export function SeparatorText(text: string):void;
     export function SameLine(offset_from_start_x?:number, spacing?:number):void;
+    export function Spacing():void;
     export function SetCursorPos(pos:vec_2):void;
+    export function IsItemFocused():boolean;
+    export function IsItemHovered():boolean;
+    export function IsItemActive():boolean;
+    export function IsItemEdited():boolean;
+    export function IsItemActivated():boolean;
+    export function IsItemDeactivated():boolean;
+    export function IsItemDeactivatedAfterEdit():boolean;
+    export function IsItemVisible():boolean;
+    export function IsItemClicked(mouse_button?:number):boolean;
+    export function IsItemToggledOpen():boolean;
+    export function GetItemRectMin():vec_2;
+    export function GetItemRectMax():vec_2;
+    export function GetItemRectSize():vec_2;
+    export function SetClipboardText(text:string):void;
+    export function GetClipboardText():string;
     export function GetForegroundDrawList(): any;
     export function GetIO(): ImGuiIO;
     export class ImGuiIO{

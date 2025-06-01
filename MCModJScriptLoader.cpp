@@ -212,7 +212,7 @@ static auto start(HMODULE hModule) -> void {
 
     JSManager::getInstance()->loadJSFromFoder();
 
-    JSManager::getInstance()->registerImGuiMouseHandle();       //注册鼠标按键相关事件
+    ModManager::getInstance()->registerImGuiMouseHandle();       //注册鼠标按键相关事件
     JSManager::getInstance()->runstdLoop();                     // 耗时操作， 跑完JS队列， 使 setTimeout工作
     test();
     ModManager::getInstance()->loopback();                      // 循环等待卸载

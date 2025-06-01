@@ -67,7 +67,7 @@ void spdlogClass::Dispose() {
 }
 
 JSValue spdlogClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
-    JSValue obj = JS_NewObjectClass(ctx, id);
+    JSValue obj = JSTool::getConstructorValue(newTarget, id);
     if(argc >= 1) {
         auto hasStr = JSTool::toString(argv[0]);
         if(!hasStr) {

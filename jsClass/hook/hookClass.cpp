@@ -161,7 +161,7 @@ JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc,
     self->m_hookinfo = HookManager::addHook(ptr, (void*)dcbNewCallback(sign.c_str(), (DCCallbackHandler*)&JSNativecall, self->m_userData));
     self->m_userData->hookinfo = self->m_hookinfo;
     
-    JSValue obj = JS_NewObjectClass(ctx, id);
+    JSValue obj = JSTool::getConstructorValue(newTarget, id);
     JS_SetOpaque(obj, self);
     return obj;
 }

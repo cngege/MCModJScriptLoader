@@ -8,7 +8,6 @@
 #include <shared_mutex>
 #include "imgui/appConsole.h"
 #include "imgui/imgui.h"
-#include "imgui/imgui_uwp_wndProc.h"
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "http/httplib.h"
@@ -369,9 +368,6 @@ auto JSManager::onImGuiRender() -> void {
     NativeBroadcastEvent("onRender");
 }
 
-auto JSManager::registerImGuiMouseHandle() -> void {
-    registerCoreWindowEventHandle();
-}
 
 auto JSManager::initJSManager()->void {
     
@@ -379,7 +375,7 @@ auto JSManager::initJSManager()->void {
 
 //void unregisterCoreWindowEventHandle();
 auto JSManager::disableJSManager() -> void {
-    unregisterCoreWindowEventHandle();
+
 }
 
 
@@ -613,6 +609,20 @@ int JSTool::setPropFunc(JSValue obj, JSCFunction* fun, std::string str, int leng
     int retv = JS_SetPropertyStr(ctx, obj, str.c_str(), jsfun);
     //JS_FreeValue(ctx, jsfun);
     return retv;
+}
+
+JSValue JSTool::getConstructorValue(JSValue thisObj, JSClassID id, bool inheritance) {
+    auto ctx = JSManager::getInstance()->getctx();
+    if(!inheritance) {   // 如果不允许被继承
+        return JS_NewObjectClass(ctx, id);
+    }
+    JSValue proto = JS_GetPropertyStr(ctx, thisObj, "prototype");
+    if(JS_IsException(proto) || JS_IsError(ctx, proto) || JS_IsUndefined(proto)) {
+        return JS_NewObjectClass(ctx, id);
+    }
+    JSValue obj = JS_NewObjectProtoClass(ctx, proto, id);
+    JS_FreeValue(ctx, proto);
+    return obj;
 }
 
 std::optional<std::vector<JSValue>> JSTool::toArray(JSValue jsv) {

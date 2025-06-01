@@ -6,6 +6,7 @@
 
 #define NOMINMAX
 
+
 namespace {
     //static JSClassID id;
     static JSClassDef _nativePointClass = {
@@ -80,12 +81,8 @@ void nativePointClass::Reg() {
     //JS_FreeValue(ctx, nativeTypes);
     JS_FreeValue(ctx, global_obj);
 
-    //JSContext* ctx = JSManager::getInstance()->getctx();
-
-
-    //auto rt = JS_GetRuntime(ctx);
     //JS_NewClassID(&nativePointClass::id);
-    //JS_NewClass(rt, nativePointClass::id, &_nativePointClass);
+    //JS_NewClass(JS_GetRuntime(ctx), nativePointClass::id, &_nativePointClass);
     //
 
     //JSValue protoInstance = JS_NewObject(ctx);
@@ -122,17 +119,18 @@ void nativePointClass::Reg() {
     //JSTool::setPropFunc(protoInstance, nativePointClass::getCstring, "getcstring");
 
     //// 创建此类的构造函数
-    //JSValue ctroInstance = JS_NewCFunction2(ctx, &nativePointClass::constructor, _nativePointClass.class_name, 0, JS_CFUNC_constructor, 0);
+    //JSValue ctroInstance = JS_NewCFunction2(ctx, &nativePointClass::constructor, _nativePointClass.class_name, 1, JS_CFUNC_constructor, 0);
     //JS_SetConstructor(ctx, ctroInstance, protoInstance);
     //JS_SetClassProto(ctx, id, protoInstance);
 
     //// 将此类注册到公共对象上
-    //JSValue global_obj = JS_GetGlobalObject(ctx);
-    //JS_SetPropertyStr(ctx, global_obj, _nativePointClass.class_name, ctroInstance);
+    //JSValue global_obj2 = JS_GetGlobalObject(ctx);
+    //JS_SetPropertyStr(ctx, global_obj2, _nativePointClass.class_name, ctroInstance);
 
-    //JS_FreeValue(ctx, global_obj);
+    //JS_FreeValue(ctx, global_obj2);
     //JS_FreeValue(ctx, ctroInstance);
     //JS_FreeValue(ctx, protoInstance);
+    
 }
 
 void nativePointClass::Dispose() {}
@@ -199,12 +197,13 @@ JSValue nativePointClass::constructor(JSContext* ctx, JSValueConst newTarget, in
     if(ptr == 0 && argc >= 2 && JS_IsNumber(argv[1]) && JS_ToInt64(ctx, &memsize, argv[1]) >= 0 && memsize > 0) {
         ptr = (int64_t)calloc(memsize, 1);
         self = new nativePointClass(ptr, static_cast<UINT>(memsize));
-        return FromPtr((uintptr_t)self);
-    }
-    else {
-        self = new nativePointClass(ptr);
+        JSValue obj = JSTool::getConstructorValue(newTarget, id);
+        JS_SetOpaque(obj, (void*)(uintptr_t)self);
+        return obj;
+        //return FromPtr((uintptr_t)self);
     }
 
+    self = new nativePointClass(ptr);
     if(argc >= 2) {
         // 处理第二个参数
         try {
@@ -225,7 +224,9 @@ JSValue nativePointClass::constructor(JSContext* ctx, JSValueConst newTarget, in
             return JS_ThrowTypeError(ctx, err.what());
         }
     }
-    return FromPtr((uintptr_t)self);
+    JSValue obj = JSTool::getConstructorValue(newTarget, id);
+    JS_SetOpaque(obj, (void*)(uintptr_t)self);
+    return obj;
 }
 
 JSValue nativePointClass::offset(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {

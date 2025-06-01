@@ -72,8 +72,10 @@ declare interface color_4 {
  */
 declare class NativePoint {
     constructor(ptr: number)
+    constructor(ptr: number, size: number)
+    constructor(ptr: number, ctype: number[])
     /**
-     * 是否启用 默认true
+     * 作为函数调用
      */
     call: (...args: any[])=> any;
     /**
@@ -81,6 +83,11 @@ declare class NativePoint {
      * @param offset 偏移量
      */
     offset(offset  : Number) : NativePoint;
+    /**
+     * 返回一个经过偏移后的新地址(返回一个新对象,而不是this)
+     * @param offset 偏移量
+     */
+    add(offset  : Number) : NativePoint;
     /**
      * 转为一个整数
      */
@@ -109,6 +116,15 @@ declare class NativePoint {
      */
     getchar() : number;
     /**
+     * 设置一个uchar类型的值, 影响一个字节
+     * @param v 
+     */
+    setuchar(v : Number) : void;
+    /**
+     * 获取一个uchar类型的值, 读取一个字节
+     */
+    getuchar() : number;
+    /**
      * 设置一个short类型的值, 影响两个字节
      * @param v 
      */
@@ -117,6 +133,15 @@ declare class NativePoint {
      * 获取一个short类型的值, 读取两个字节
      */
     getshort() : number;
+    /**
+     * 设置一个ushort类型的值, 影响两个字节
+     * @param v 
+     */
+    setushort(v : Number) : void;
+    /**
+     * 获取一个ushort类型的值, 读取两个字节
+     */
+    getushort() : number;
     /**
      * 设置int类型的值, 影响四个字节
      * @param v 
@@ -127,6 +152,15 @@ declare class NativePoint {
      */
     getint() : number;
     /**
+     * 设置uint类型的值, 影响四个字节
+     * @param v 
+     */
+    setuint(v : Number) : void;
+    /**
+     * 获取uint类型的值, 读取四个字节
+     */
+    getuint() : number;
+    /**
      * 设置long类型的值, 影响四个字节
      * @param v 
      */
@@ -135,6 +169,15 @@ declare class NativePoint {
      * 读取long类型的值, 读取四个字节
      */
     getlong() : number;
+    /**
+     * 设置ulong类型的值, 影响四个字节
+     * @param v 
+     */
+    setulong(v : Number) : void;
+    /**
+     * 读取ulong类型的值, 读取四个字节
+     */
+    getulong() : number;
     /**
      * 设置一个浮点数类型的值, 影响四个字节
      * @param v 
@@ -166,6 +209,15 @@ declare class NativePoint {
      * 指针强转字符串 *(std::string*)thi->m_ptr;
      */
     getstring() : string;
+    /**
+     * 对当前指针设置一个C++字符串(std::string)
+     */
+    setstring(str : string) : void;
+    /**
+     * 对当前指针填充数组, 请控制好长度,防止越界
+     * @param bytes 请确保值范围在char范围内
+     */
+    setbytes(bytes: number[]): void
     /**
      * 指针强转C语言类型字符串 (const char*)thi->m_ptr;
      */

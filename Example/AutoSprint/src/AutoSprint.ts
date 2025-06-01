@@ -21,8 +21,19 @@ import * as http from 'http'
         }
     });
 
+    const findTopCall = (ptr:number)=>{
+        for(let i = 0; i < 500; i++){
+            if(new NativePoint(ptr - i).getuchar() == 0xCC){
+                return ptr - i + 1;
+            }
+        }
+        return 0;
+    }
+
     let sign_old = new SignCode("移动输入特征码old", true);
     sign_old.AddSign("48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC ? 0F B6 ? ? 49");
+    sign_old.AddSign("41 88 01 48 8B ? 0F", findTopCall);
+    sign_old.AddSign("41 88 ? 01 0F B6 ? ? 41 88 ? 02 0F B6 ? ? 41 88 ? 03 0F B6 ? ?  41 88 ? 04", findTopCall);
     if(sign_old.isOK()){
         let offset : number = new NativePoint(sign_old.get()).offset(18).getchar();
         // 创建hook

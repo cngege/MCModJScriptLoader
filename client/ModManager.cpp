@@ -4,6 +4,7 @@
 #include "utils/signcode.h"
 #include <shared_mutex>
 #include <fstream>
+#include "imgui/imgui_uwp_wndProc.h"
 
 ModManager* ModManager::getInstance() {
     static ModManager instance{};
@@ -151,8 +152,12 @@ auto ModManager::trySafeExceptions(const std::exception& e) -> void {
 }
 
 
+auto ModManager::registerImGuiMouseHandle() -> void {
+    registerCoreWindowEventHandle();
+}
+
 auto ModManager::disableMod(uintptr_t modhandle) -> void {
-    
+    unregisterCoreWindowEventHandle();
 }
 
 auto ModManager::readConfig() -> nlohmann::json {
