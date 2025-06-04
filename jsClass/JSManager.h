@@ -133,7 +133,7 @@ public:
          * @brief 将此类注册实例的接口返回，可供模块调用
          * @return 
          */
-        JSValue buildToModule() {
+        JSValue buildToModule() const {
             auto ctx = JSManager::getInstance()->getctx();
             JS_FreeValue(ctx, protoInstance);
             return ctroInstance;
@@ -256,6 +256,8 @@ public:
      */
     template<typename T>
     static std::optional<std::vector<T>> getArray(JSValue, std::function<T(size_t, JSValue)>);
+
+    static std::optional<std::vector<std::pair<std::string, std::string>>> getObjKV(JSValue jsv);
 
     /**
      * @brief 从C字符串转为JS值

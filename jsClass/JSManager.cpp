@@ -643,6 +643,63 @@ std::optional<std::vector<JSValue>> JSTool::toArray(JSValue jsv) {
     ret = v;
     return ret;
 }
+#include <cctype>
+#include <algorithm>
+std::optional<std::vector<std::pair<std::string, std::string>>> JSTool::getObjKV(JSValue obj) {
+    auto ctx = JSManager::getInstance()->getctx();
+    std::optional<std::vector<std::pair<std::string, std::string>>> ret;
+    std::vector<std::pair<std::string, std::string>> allItem = {};
+
+    // 1. 检查是否为对象
+    if(!JS_IsObject(obj)) {
+        return ret;
+    }
+
+    // 2. 获取属性列表
+    JSPropertyEnum* props;
+    uint32_t count;
+    int flags = JS_GPN_STRING_MASK | JS_GPN_ENUM_ONLY;
+    if(JS_GetOwnPropertyNames(ctx, &props, &count, obj, flags)) {
+        return ret;
+    }
+
+    // 3. 遍历所有属性
+    for(uint32_t i = 0; i < count; i++) {
+        // 获取属性名（键）
+        JSAtom atom = props[i].atom;
+        JSValue keyVal = JS_AtomToString(ctx, atom);
+        const char* keyStr = JS_ToCString(ctx, keyVal);
+        std::string key = keyStr ? keyStr : "";
+
+        // 获取属性值
+        JSValue val = JS_GetProperty(ctx, obj, atom);
+        auto value = JSTool::toString(val);
+        if(!value) return ret;
+
+        // 释放资源
+        JS_FreeCString(ctx, keyStr);
+        JS_FreeValue(ctx, keyVal);
+        JS_FreeValue(ctx, val);
+
+        // 存入结果
+        if(!key.empty()) {
+            // 转为小写
+            std::transform(key.begin(), key.end(), key.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+            allItem.push_back({ key , *value });
+        }
+    }
+    // 4. 释放属性列表
+    
+    uint32_t i;
+    if(props) {
+        for(i = 0; i < count; i++)
+            JS_FreeAtom(ctx, props[i].atom);
+        js_free(ctx, props);
+    }
+    ret = allItem;
+    return ret;
+}
 
 JSValue JSTool::fromString(const char* str) {
     auto ctx = JSManager::getInstance()->getctx();
