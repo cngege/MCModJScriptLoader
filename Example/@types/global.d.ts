@@ -243,6 +243,11 @@ declare class NativePoint {
      * @returns 旧的内存页状态值,为null表示失败
      */
     setVirtualProtect(size: number, status: number):number|null;
+    /**
+     * 当NativePoint对象被释放，内部析构函数调用时触发
+     * @param callback 
+     */
+    onfree(callback: (ptr:number)=>void):void;
 }
 
 /**
@@ -301,6 +306,10 @@ declare class HookBase{
      */
     origin : NativePoint;
 }
+
+declare function createThread(call: ()=>void, sleep?:number):number
+declare function thread_sleep(sleep?:number):void
+declare function testDumpValue(all: Object):void
 
 /**
  * 参数的类型

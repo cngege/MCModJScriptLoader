@@ -7,6 +7,13 @@ import GuiData from './GuiData';
 
 const logger = new spdlog();
 
+export interface 队列类型回调{
+    mainCall:()=>void,
+    CheckCall:()=>boolean
+}
+
+// 游戏线程执行队列
+var 游戏线程执行队列 : 队列类型回调[] = [];
 
 export default class ClientInstance {
     static #Instance : number = 0; 
@@ -33,6 +40,15 @@ export default class ClientInstance {
                 let ClientInstance_Tick = new HookBase(function (ci_ptr : number){
                     // 广播事件 Tick
                     事件系统.事件广播("onTick", null, ci_ptr);
+                    // 跑队列
+                    for(let i = 0; i < 游戏线程执行队列.length; i++){
+                        if(typeof 游戏线程执行队列[i].CheckCall != 'function' || 游戏线程执行队列[i].CheckCall()){
+                            游戏线程执行队列[i].mainCall();
+                            游戏线程执行队列.splice(i, 1);
+                            i--;
+                        }
+                    }
+
                     // 拿到客户端单例
                     if(ClientInstance.#Instance == 0){
                         ClientInstance.#Instance = ci_ptr;
@@ -63,6 +79,14 @@ export default class ClientInstance {
             return group1 && group2 && group3 && grpup4;
         }
         return true;
+    }
+
+    /**
+     * 添加进
+     * @param work 
+     */
+    static PushNextGameThreadWait(work : 队列类型回调){
+        游戏线程执行队列.push(work);
     }
 
     /**

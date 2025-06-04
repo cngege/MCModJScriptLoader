@@ -2,8 +2,9 @@ declare module "http" {
   export interface Options {
     url: string;
     method?: "Get" | "Post";
-    headers?: Record<string, string>;   // TODO
-    body?: string | Record<string, any>;// TODO
+    data?: Record<string, string>;// TODO
+    headers?: Record<string, string>;//请求头
+    body?: string | Record<string, any>;// 请求参数
     timeout?: number;
     followlocation?: boolean;
     download? : (len : number, total : number) => boolean;

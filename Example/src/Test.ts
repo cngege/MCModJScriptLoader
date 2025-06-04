@@ -3,9 +3,9 @@ import * as 事件系统 from '事件系统'
 import SignCode from 'SignCode'
 import * as http from 'http'
 import * as ImGui from 'imgui'
-import ClientInstance from './module/ClientInstance'
-import MinecraftGame from './module/MinecraftGame'
-import GuiData from './module/GuiData'
+import ClientInstance from './module/SDK/ClientInstance'
+import MinecraftGame from './module/SDK/MinecraftGame'
+import GuiData from './module/SDK/GuiData'
 //import ClientInstance from 'https://disk.ningsuan.com.cn/index.php?explorer/share/file&hash=5365IsSFHRgVR5UvNiDNr8HqFniXKLi32dWpekJJ6CTagNaJHBpLObWgeRcwdINF4DJzLQLGcQ&name=/ClientInstance.js&_etag=bc55b&size=1549'
 
 (function(模块 : 类型_公共模块){
@@ -138,19 +138,23 @@ import GuiData from './module/GuiData'
             }
 
             if(ImGui.CollapsingHeader("6/2")){
-                if(ImGui.Button("输出客户端文本消息")){
-                    ClientInstance.GetGuiData().displayClientMessage("测试输出文本消息");
-                    new ArrayBuffer()
+                if(ImGui.Button("输出客户端文本消息1")){
+                    ClientInstance.GetGuiData().displayClientMessage("测试输出文本消息测试输出文本消息测试输出文本消息测试输出文本消息测试输出文本消息测试输出文本消息测试输出文本消息");
+                }
+                if(ImGui.Button("输出客户端文本消息2")){
+                    ClientInstance.GetGuiData().displayClientMessage("测试输出文本消息 %s", "第二个消息");
                 }
                 if(ImGui.Button("text")){
-                    if (typeof ArrayBuffer !== 'undefined') {
-                        logger.info("ArrayBuffer 可用");
-                    }
+                    let x = new NativePoint(0,32);
+                    x.onfree((v)=>{
+                        logger.info("X 被释放");
+                    });
+                    
                 }
             }
         }
         ImGui.End();
-    })
+    });
 
     logger.info("已成功加载模块:", 模块.name);
 })(__模块__)

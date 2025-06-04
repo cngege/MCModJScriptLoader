@@ -15,5 +15,8 @@ declare module "工具" {
   export function 设置内存Bool值(ptr : number, value : boolean): void;
   export function 读取内存Bool值(ptr : number): boolean;
   export function 世界位置转屏幕位置(ptr : NativePoint, ori: vec_3, pos: vec_3, fov: vec_2, screenSize: vec_2): boolean;
-
+  export function 申请内存(size:number):number;
+  export function 释放内存(ptr:number):void;
+  export function 申请CPP字符串():number; 
+  export function 释放CPP字符串(ptr:number):void;
 }
