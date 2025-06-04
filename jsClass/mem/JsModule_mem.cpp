@@ -126,6 +126,43 @@ static JSValue js_WorldToScreen(JSContext* ctx, JSValueConst this_val, int argc,
     else {
         return JS_NULL;
     }
+    
+}
+
+static JSValue 申请内存(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    // 长度
+    std::optional<size_t> size;
+    auto ret = JSTool::createParseParameter(argc, argv)
+        .Parse(size)
+        .Build();
+    if(!ret.empty()) return JS_ThrowTypeError(ctx, ret.c_str());
+    return JS_NewInt64(ctx, (int64_t)malloc(*size));
+}
+
+static JSValue 释放内存(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::optional<int64_t> ptr;
+    auto ret = JSTool::createParseParameter(argc, argv)
+        .Parse(ptr)
+        .Build();
+    if(!ret.empty()) return JS_ThrowTypeError(ctx, ret.c_str());
+    if(*ptr == 0) return JS_ThrowTypeError(ctx, "不能释放一个空指针");
+    free((void*)*ptr);
+    return JS_UNDEFINED;
+}
+
+static JSValue 申请CPP字符串(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    return JS_NewInt64(ctx, (int64_t)(new std::string()));
+}
+
+static JSValue 释放CPP字符串(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::optional<int64_t> ptr;
+    auto ret = JSTool::createParseParameter(argc, argv)
+        .Parse(ptr)
+        .Build();
+    if(!ret.empty()) return JS_ThrowTypeError(ctx, ret.c_str());
+    if(*ptr == 0) return JS_ThrowTypeError(ctx, "不能释放一个空指针");
+    delete (std::string*)*ptr;
+    return JS_UNDEFINED;
 }
 
 static const JSCFunctionListEntry js_mem_funcs[] = {
@@ -135,6 +172,10 @@ static const JSCFunctionListEntry js_mem_funcs[] = {
     JS_CFUNC_DEF2("设置内存Bool值", 2, js_setBoolValue),
     JS_CFUNC_DEF2("读取内存Bool值", 2, js_getBoolValue),
     JS_CFUNC_DEF2("世界位置转屏幕位置", 2, js_WorldToScreen),
+    JS_CFUNC_DEF2("申请内存", 1, 申请内存),
+    JS_CFUNC_DEF2("释放内存", 1, 释放内存),
+    JS_CFUNC_DEF2("申请CPP字符串", 0, 申请CPP字符串),
+    JS_CFUNC_DEF2("释放CPP字符串", 1, 释放CPP字符串),
 };
 
 static int js_mem_init(JSContext* ctx, JSModuleDef* m) {
