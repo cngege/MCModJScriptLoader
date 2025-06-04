@@ -46,7 +46,7 @@ public:
 	nativePointClass(uintptr_t);
 	nativePointClass(uintptr_t, UINT);
 	~nativePointClass();
-	uintptr_t get();
+	uintptr_t get() const;
 
 private:
 	static JSValue constructor(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
@@ -91,6 +91,7 @@ private:
 	static JSValue toArrayBuffer(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue fillArrayBuffer(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 	static JSValue setVirtualProtect(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
+	static JSValue onfree(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv);
 
 private:
 	DCCallVM_* m_vm = nullptr;
@@ -98,7 +99,7 @@ private:
 	UINT m_freelen = 0;
 
 	std::vector<NativeTypes> m_agreeOn{};
-
+	JSValue m_freeCall = JS_NULL;
 public:
 	static JSClassID id;
 };

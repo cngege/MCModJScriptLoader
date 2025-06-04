@@ -61,6 +61,7 @@ void nativePointClass::Reg() {
         .setPropFunc(nativePointClass::toArrayBuffer, "toArrayBuffer")
         .setPropFunc(nativePointClass::fillArrayBuffer, "fillArrayBuffer")
         .setPropFunc(nativePointClass::setVirtualProtect, "setVirtualProtect")
+        .setPropFunc(nativePointClass::onfree, "onfree")
         .setConstructor(&nativePointClass::constructor)
         .build();
 
@@ -174,6 +175,18 @@ nativePointClass::nativePointClass(uintptr_t ptr, UINT calloc) {
 
 nativePointClass::~nativePointClass() {
     dcFree(m_vm);
+    if(!JS_IsNull(this->m_freeCall)) {
+        // 执行函数
+        auto ctx = JSManager::getInstance()->getctx();
+        JSValue jsvI64 = JS_NewInt64(ctx, m_ptr);
+        JSValue jsv[] = { jsvI64 };
+        JSValue callV = JS_Call(ctx, this->m_freeCall, JS_NULL,1, jsv);
+        if(JS_IsException(callV)) {
+            spdlog::error("{}", JSManager::getInstance()->getErrorStack().c_str());
+        }
+        JS_FreeValue(ctx, jsvI64);
+        JS_FreeValue(ctx, jsvI64);
+    }
     if(m_ptr && m_freelen > 0) {
         free((void*)m_ptr);
         m_ptr = NULL;
@@ -181,7 +194,7 @@ nativePointClass::~nativePointClass() {
     }
 }
 
-uintptr_t nativePointClass::get() {
+uintptr_t nativePointClass::get() const {
     return m_ptr;
 }
 
@@ -520,7 +533,7 @@ JSValue nativePointClass::setstring(JSContext* ctx, JSValueConst newTarget, int 
     if(argc < 1) return JS_ThrowTypeError(ctx, "需要接收一个字符串参数");
     auto str = JSTool::toString(argv[0]);
     if(!str)  return JS_ThrowTypeError(ctx, "参数无法转为字符串");
-    *(std::string*)thi->m_ptr = *str;
+    *(std::string*)thi->m_ptr = *str;   //TODO: 这种易出现不可预知的后果
     return JS_UNDEFINED;
 }
 
@@ -776,7 +789,7 @@ JSValue nativePointClass::fillArrayBuffer(JSContext* ctx, JSValueConst newTarget
     if(argc >= 2) {
         auto nsize = JSTool::toInt64(argv[1]);
         if(!nsize) return JS_ThrowTypeError(ctx, "参数二不是 number 类型");
-        if(*nsize > length) {
+        if(*nsize > (int64_t)length) {
             return JS_ThrowTypeError(ctx, "指定要填充的长度小于 buffer 的长度");
         }
         length = *nsize;
@@ -795,7 +808,6 @@ JSValue nativePointClass::setVirtualProtect(JSContext* ctx, JSValueConst newTarg
     nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
     std::optional<size_t> size;
     std::optional<int> status;
-
     std::string err = JSTool::createParseParameter(argc, argv)
         .Parse(size)
         .Parse(status)
@@ -809,4 +821,14 @@ JSValue nativePointClass::setVirtualProtect(JSContext* ctx, JSValueConst newTarg
         return JS_NewInt32(ctx, (int32_t)oldProtect);
     }
     return JS_NULL;
+}
+
+// 当此JS对象将要被释放时,注册被释放时的函数
+JSValue nativePointClass::onfree(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+    if(argc < 1 || !JSTool::isFun(argv[0])) {
+        return JS_ThrowTypeError(ctx, "必须要有一个回调函数参数");
+    }
+    nativePointClass* thi = (nativePointClass*)JS_GetOpaque(newTarget, id);
+    thi->m_freeCall = (JS_DupValue(ctx, argv[0]));
+    return JS_UNDEFINED;
 }
