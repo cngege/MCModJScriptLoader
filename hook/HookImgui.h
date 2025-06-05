@@ -30,7 +30,7 @@
 //#pragma warning (disable: 26495)
 
 
-
+void ImGui_Uwp_EveryUpdate_Frame();
 
 auto GetDllMod(void) -> HMODULE {
 	MEMORY_BASIC_INFORMATION info;
@@ -177,7 +177,7 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 			*/
 		}
 
-		
+		ImGui_Uwp_EveryUpdate_Frame();
 		ImGui::Render();
 		ppContext->OMSetRenderTargets(1, &mainRenderTargetView, NULL);
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
@@ -311,6 +311,7 @@ HRESULT __fastcall hookPresentD3D12(IDXGISwapChain3* ppSwapChain, UINT syncInter
 			*/
 		}
 		ImGui::EndFrame();
+		ImGui_Uwp_EveryUpdate_Frame();
 
 		FrameContext& currentFrameContext = frameContext[ppSwapChain->GetCurrentBackBufferIndex()];
 		currentFrameContext.commandAllocator->Reset();

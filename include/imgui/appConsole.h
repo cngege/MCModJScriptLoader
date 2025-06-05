@@ -28,12 +28,12 @@ struct ExampleAppConsole
     bool                  ScrollToBottom;
     bool                  MainOpen=false;
     std::vector<const char*> LogLevel = { "Trace","Debug", "Info", "Warn", "Error", "CRITICAL", "Off" };
-    int                   SelectLogLevel = -1;
+    int                   SelectLogLevel;
 
     ExampleAppConsole() {
         //IMGUI_DEMO_MARKER("Examples/Console");
         ClearLog();
-        memset(InputBuf, 0, sizeof(InputBuf));
+        memset(InputBuf, 0, sizeof(InputBuf));// InputBuf[0] = 'A';
         HistoryPos = -1;
 
         // "CLASSIFY" is here to provide the test case where "C"+[tab] completes to "CL" and display multiple matches.
@@ -42,10 +42,11 @@ struct ExampleAppConsole
         Commands.push_back("CLEAR");
         Commands.push_back("CLASSIFY");
         AutoScroll = true;
-        InputBox = false;
+        InputBox = true;
         PrintDebug = true;
         ShowDemoWindow = false;
         ScrollToBottom = false;
+        SelectLogLevel = -1;
     }
     ~ExampleAppConsole() {
         ClearLog();
@@ -137,8 +138,9 @@ struct ExampleAppConsole
         }
 
         ImGui::SameLine();
-        if(ImGui::SmallButton("脚本"))
+        if(ImGui::SmallButton("脚本")) {
             ImGui::OpenPopup("Script");
+        }
 
         ImGui::SameLine();
         if(ImGui::SmallButton("卸载")) { ModManager::getInstance()->stopSign(); };

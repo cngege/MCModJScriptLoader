@@ -1,5 +1,8 @@
 ﻿#include "imgui_uwp_wndProc.h"
+#include "imgui_internal.h"
+#include <imgui/imstb_textedit.h>
 
+#define NOMINMAX
 #include <windows.h>
 #include <windowsx.h> // GET_X_LPARAM(), GET_Y_LPARAM()
 #include "spdlog/spdlog.h"
@@ -8,25 +11,44 @@
 #include <winrt/windows.ui.input.h>
 #include <winrt/base.h>
 #include <windows.system.h>
+
+#include <winrt/windows.applicationmodel.core.h>
 #include <winrt/Windows.Foundation.h>
-
-#include "winrt/windows.applicationmodel.core.h"
-#include "winrt/Windows.UI.ViewManagement.h"
+#include <winrt/windows.foundation.collections.h>
+#include <winrt/Windows.UI.Text.Core.h>
+#include <winrt/Windows.UI.ViewManagement.h>
 //#include "winrt/Windows.UI.Core.h"
-#include "winrt/windows.system.h"
-using namespace winrt::Windows::UI::Core;
+#include <winrt/windows.system.h>
+#include <winrt/windows.graphics.display.h>
 
-using winrt::Windows::UI::Core::CharacterReceivedEventArgs;
-using winrt::Windows::UI::Core::CoreWindow;
-using winrt::Windows::UI::Core::KeyEventArgs;
-using winrt::Windows::UI::Core::PointerEventArgs;
-using winrt::Windows::Foundation::TypedEventHandler;
-using winrt::Windows::System::VirtualKey;
-using winrt::Windows::UI::Core::CorePhysicalKeyStatus;
-using winrt::Windows::UI::Core::CoreVirtualKeyStates;
+
+//using ABI::Windows::UI::Text::Core::CoreTextServicesManager;//转为下方的使用命名空间来解决错误
+
 using namespace winrt::Windows::ApplicationModel::Core;
+using namespace winrt::Windows::UI::Core;
+using namespace winrt::Windows::UI::Text::Core;
+using namespace winrt::Windows::UI::Input;
+using namespace winrt::Windows::UI::ViewManagement;
+using namespace winrt::Windows::Foundation;
+using namespace winrt::Windows::System;
+
+//using winrt::Windows::UI::Core::CharacterReceivedEventArgs;
+//using winrt::Windows::UI::Core::CoreWindow;
+//using winrt::Windows::UI::Core::KeyEventArgs;
+//using winrt::Windows::UI::Core::PointerEventArgs;
+//using winrt::Windows::Foundation::TypedEventHandler;
+//using winrt::Windows::System::VirtualKey;
+//using winrt::Windows::UI::Core::CorePhysicalKeyStatus;
+//using winrt::Windows::UI::Core::CoreVirtualKeyStates;
+
+
 
 static CoreWindow win = NULL;
+static CoreTextServicesManager m_manager = NULL;
+static CoreTextEditContext editContext = NULL;
+static InputPane inputPane = NULL;
+
+static ImGuiID lastActiveID = 0; // 记录上一次激活的输入框ID
 
 ImGuiMouseSource GetMouseSourceFromMessageExtraInfo()
 {
@@ -330,10 +352,10 @@ void keyup(CoreWindow const& sender, KeyEventArgs const& args) {
             vk = IM_VK_KEYPAD_ENTER;
 
         // Submit key event
-        const ImGuiKey key = ImGui_ImplUwp_VirtualKeyToImGuiKey(vk);
+        const ImGuiKey _key = ImGui_ImplUwp_VirtualKeyToImGuiKey(vk);
         const int scancode = keyStatus.ScanCode;
-        if(key != ImGuiKey_None)
-            ImGui_ImplUWP_AddKeyEvent(key, is_key_down, vk, scancode);
+        if(_key != ImGuiKey_None)
+            ImGui_ImplUWP_AddKeyEvent(_key, is_key_down, vk, scancode);
 
         // Submit individual left/right modifier events
         if(vk == VK_SHIFT) {
@@ -351,6 +373,7 @@ void keyup(CoreWindow const& sender, KeyEventArgs const& args) {
 
             if(!IsVkDown(VK_LMENU) && !IsVkDown(VK_RMENU)) { ImGui_ImplUWP_AddKeyEvent(ImGuiKey_LeftAlt, is_key_down, VK_LMENU, scancode); }
         }
+
     }
     if(ImGui::GetIO().WantCaptureKeyboard) {	// 这里应该是指焦点在ImGui上, 可能不在输入框里
         //args.Handled(true);
@@ -406,7 +429,7 @@ static void OnPointerPressed(CoreWindow const& sender, PointerEventArgs const& a
             io.AddMouseButtonEvent(2, true);
         }
     }
-    if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
+    //if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
 }
 
 static void OnPointerReleased(CoreWindow const& sender, PointerEventArgs const& args) {
@@ -416,19 +439,19 @@ static void OnPointerReleased(CoreWindow const& sender, PointerEventArgs const& 
     io.AddMouseSourceEvent(mouse_source);
     {
 
-        winrt::Windows::UI::Input::PointerUpdateKind kind = args.CurrentPoint().Properties().PointerUpdateKind();
-        if(kind == winrt::Windows::UI::Input::PointerUpdateKind::LeftButtonReleased) {
+        PointerUpdateKind kind = args.CurrentPoint().Properties().PointerUpdateKind();
+        if(kind == PointerUpdateKind::LeftButtonReleased) {
             // 处理左键松开情况
             io.AddMouseButtonEvent(0, false);
         }
-        else if(kind == winrt::Windows::UI::Input::PointerUpdateKind::RightButtonReleased) {
+        else if(kind == PointerUpdateKind::RightButtonReleased) {
             io.AddMouseButtonEvent(1, false);
         }
-        else if(kind == winrt::Windows::UI::Input::PointerUpdateKind::MiddleButtonReleased) {
+        else if(kind == PointerUpdateKind::MiddleButtonReleased) {
             io.AddMouseButtonEvent(2, false);
         }
     }
-    if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
+    //if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
 }
 
 static void OnPointerMoved(CoreWindow const& sender, PointerEventArgs const& args) {
@@ -440,30 +463,297 @@ static void OnPointerMoved(CoreWindow const& sender, PointerEventArgs const& arg
         const auto& position = args.CurrentPoint().Position();
         io.AddMousePosEvent(position.X, position.Y);
     }
-    if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
+    //if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
 }
 
 static void OnPointerWheelChanged(CoreWindow const& sender, PointerEventArgs const& args) {
     if(ImGui::GetCurrentContext() == nullptr) return;
     ImGuiMouseSource mouse_source = GetMouseSourceFromMessageExtraInfo();
     ImGuiIO& io = ImGui::GetIO();
-    io.AddMouseSourceEvent(mouse_source);
-    {
-        io.AddMouseWheelEvent(0.f, args.CurrentPoint().Properties().MouseWheelDelta() < 0 ? -1.f : 1.f);
+    IPointerPoint pointerPoint = args.CurrentPoint();
+    IPointerPointProperties pointerPointProps = pointerPoint.Properties();
+
+    bool isHorizontalMouseWheel = pointerPointProps.IsHorizontalMouseWheel();
+    if(isHorizontalMouseWheel) {
+        io.AddMouseWheelEvent(-(float)pointerPointProps.MouseWheelDelta() / (float)WHEEL_DELTA, 0.0f);
     }
-    if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
+    else {
+        io.AddMouseWheelEvent(0.0f, (float)pointerPointProps.MouseWheelDelta() / (float)WHEEL_DELTA);
+        //io.AddMouseWheelEvent(0.f, pointerPointProps.MouseWheelDelta() < 0 ? -1.f : 1.f);
+    }
+
+    io.AddMouseSourceEvent(mouse_source);
+    //{
+    //    io.AddMouseWheelEvent(0.f, pointerPointProps.MouseWheelDelta() < 0 ? -1.f : 1.f);
+    //}
+    //if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
 }
 
-static void OnLanJie(CoreDispatcher const& sender, AcceleratorKeyEventArgs const& args) {
-    if(ImGui::GetCurrentContext() == nullptr) return;
+void OnSelectionRequested(CoreTextEditContext const& sender, CoreTextSelectionRequestedEventArgs const& args) {
+    auto request = args.Request();
+    ImGuiInputTextState* state = ImGui::GetInputTextState(lastActiveID);
+    if(!state || !state->ID) {
+        return;
+    }
+    if(request.IsCanceled()) {
+        return;
+    }
+    if(state->HasSelection()) {
+        request.Selection(CoreTextRange{
+            state->GetSelectionStart(),
+            state->GetSelectionEnd()
+                          });
+    }/*else{
+        request.Selection(CoreTextRange{
+            state->GetCursorPos(),
+            state->GetCursorPos()
+                          });
+    }*/
+
+}
+
+// 返回指定的文本范围。请注意,系统可能会要求更多文本
+// 比存在于文本缓冲区中。
+static void OnTextRequested(CoreTextEditContext const& sender, CoreTextTextRequestedEventArgs const& args) {
+    CoreTextTextRequest request = args.Request();
+    ImGuiInputTextState* state = ImGui::GetInputTextState(lastActiveID);
+    if(!state || !state->ID) {
+        return;
+    }
+    
+    auto hstrText = winrt::to_hstring(std::string(state->TextA.Data));
+    request.Text(hstrText);
+}
+
+static int utf8_offset(ImVector<char> strs, int offset) {
+    int pos = 0;    // 字节索引位置
+    int count = 0;  // 已跳过的字符计数
+
+    while(count < offset) {
+        uint8_t c = strs[pos];
+        // 根据UTF-8首字节确定字符字节长度
+        int char_len = 1;
+        if(c >= 0xF0) char_len = 4; // 11110xxx 4字节字符
+        else if(c >= 0xE0) char_len = 3; // 1110xxxx 3字节字符（如中文）
+        else if(c >= 0xC0) char_len = 2; // 110xxxxx 2字节字符
+
+        // 移动到下一个字符起始位置
+        pos += char_len;
+        count++;
+    }
+
+    return pos;
+}
+
+int 开始输入节点位置 = -1;
+int select_min = 0, select_max = 0;
+int last节长度 = 0;
+int 组合输入标记流程 = 0; /*0: 没开始, 1: 开始标记 2：组合输入中 3: 结束标记组合输入进去,*/
+static void OnTextUpdating(CoreTextEditContext const& sender, CoreTextTextUpdatingEventArgs const& args) {
+    if(ImGui::GetCurrentContext() == nullptr)
+        return;
+
     ImGuiIO& io = ImGui::GetIO();
-    if(io.WantCaptureMouseUnlessPopupClose) args.Handled(true);
-    if(io.WantCaptureMouse) args.Handled(true);
-    if(io.WantCaptureKeyboard) args.Handled(true);
+    const auto incomingText = args.Text();
+    const auto range = args.Range();
+    int replaceStart = range.StartCaretPosition;
+    int replaceLength = range.EndCaretPosition - replaceStart;
+
+    std::string utf8Text = winrt::to_string(incomingText);
+    spdlog::debug("调试输出:{}", utf8Text.c_str());
+    ImGuiInputTextState* state = ImGui::GetInputTextState(lastActiveID);
+    if(!state || !state->ID) {
+        args.Result(CoreTextTextUpdatingResult::Failed);
+        return;
+    }
+    
+    auto stb = (STB_TexteditState*)state->Stb;    
+    // 控件要他选定范围
+    if(state->HasSelection()) {
+        开始输入节点位置 = -1;
+        
+        select_min = state->GetSelectionStart();
+        select_max = state->GetSelectionEnd();
+    }
+    if(replaceLength > 0) {
+        int start = utf8_offset(state->TextA, range.StartCaretPosition);
+        int end = utf8_offset(state->TextA, range.EndCaretPosition);
+
+        spdlog::warn("输入法提示选区替换start:{}, end:{}", start, end);
+        stb->select_start = start;
+        stb->select_end = end;
+        
+        select_min = start;
+        select_max = start + static_cast<int>(strlen(utf8Text.data()));
+        开始输入节点位置 = -1;
+    }
+    else {
+        if(开始输入节点位置 >= 0) {
+            if(last节长度>0) {
+                stb->select_start = 开始输入节点位置;
+                stb->select_end = 开始输入节点位置 + last节长度;
+            }
+            else {
+                state->ClearSelection();
+                stb->cursor = 开始输入节点位置;
+                // 划定下一次替换的范围
+                select_min = 开始输入节点位置;
+                select_max = 开始输入节点位置 + static_cast<int>(strlen(utf8Text.data()));
+                开始输入节点位置 = -1;
+            }
+        }
+        else {
+            // 否则表示是选择一个范围
+            stb->select_start = select_min;
+            stb->select_end = select_max;
+            // 依旧划定下一次替换范围
+            select_min = select_min;
+            select_max = select_min + static_cast<int>(strlen(utf8Text.data()));
+        }
+    }
+    last节长度 = static_cast<int>(strlen(utf8Text.data()));
+    io.AddInputCharactersUTF8(utf8Text.data());
+    //state->CursorAnimReset();
+    args.Result(CoreTextTextUpdatingResult::Succeeded);
 }
 
+static void OnCompositionStarted(CoreTextEditContext const& sender, CoreTextCompositionStartedEventArgs const& args) {
+    ImGuiInputTextState* state = ImGui::GetInputTextState(lastActiveID);
+    if(!state || !state->ID) {
+        spdlog::error("OnCompositionStarted !start||!state->ID");
+        return;
+    }
+    if(state->HasSelection()) {
+        开始输入节点位置 = -1;
+    }
+    else {
+        开始输入节点位置 = state->GetCursorPos();
+    }
+    last节长度 = 0;
+    
+    spdlog::debug("开始输入节点位置:{}", 开始输入节点位置);
+}
 
+static void OnCompositionCompleted(CoreTextEditContext const& sender, CoreTextCompositionCompletedEventArgs const& args) {
+    // 输入中文组合完成
+    //auto& io = ImGui::GetIO();
+    ImGuiInputTextState* state = ImGui::GetInputTextState(lastActiveID);
+    if(!state || !state->ID) {
+        return;
+    }
+    //auto stb = (STB_TexteditState*)state->Stb;
+    if(state->HasSelection())
+        开始输入节点位置 = -1;
+    else
+        开始输入节点位置 = state->GetCursorPos();
+    last节长度 = 0;
+}
+/**
+ * @brief 同步更新选区
+ * @param sender 
+ * @param args 
+ */
+static void OnSelectionUpdating(CoreTextEditContext const& sender, CoreTextSelectionUpdatingEventArgs const & args) {
+    ImGuiInputTextState* state = ImGui::GetInputTextState(ImGui::GetActiveID());
+    if(state) {
+        // 更新系统选区范围
+        auto select = args.Selection();
+        select.StartCaretPosition = std::min(state->GetSelectionStart(), state->GetSelectionEnd());
+        select.EndCaretPosition = std::max(state->GetSelectionStart(), state->GetSelectionEnd());
+        args.Result(CoreTextSelectionUpdatingResult::Succeeded);
+    }
+    args.Result(CoreTextSelectionUpdatingResult::Failed);
+}
+/**
+ * @brief 更新输入法小窗口位置
+ * @param sender 
+ * @param args 
+ */
+static void OnLayoutRequested(CoreTextEditContext const& sender, CoreTextLayoutRequestedEventArgs const& args) {
+    auto req = args.Request();
+    if(!req) {
+        spdlog::warn("args.Request() 为空 {}:{}", __FILE__, __LINE__);
+        return;
+    }
+    if(lastActiveID != 0) {
+        ImVec2 pos = /*ImGui::GetItemRectMin()*/ImGui::GetMousePos();
+        ImVec2 size = ImGui::GetItemRectSize();
 
+        POINT pt = { static_cast<LONG>(pos.x), static_cast<LONG>(pos.y + 15) };
+        //auto rect = win.GetForCurrentThread().Bounds();
+        auto window = (HWND)FindWindowA(nullptr, (LPCSTR)"Minecraft");
+        auto childwindow = (HWND)FindWindowExA(window, NULL, NULL, (LPCSTR)"Minecraft");
+        if(window == NULL || childwindow == NULL) {
+            spdlog::error("未能获取窗口句柄 {}:{}", __FILE__, __LINE__);
+            req.LayoutBounds().TextBounds({ 10.0f,10.0f,10.0f,10.0f });
+            return;
+        }
+        ::ClientToScreen(childwindow/*window，childwindow*/, &pt);
+        //double scaleFactor = winrt::Windows::Graphics::Display::DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel();
+        Rect rect{
+            static_cast<float>(pt.x),
+            static_cast<float>(pt.y),
+            static_cast<float>(size.x),
+            static_cast<float>(size.y)};
+
+        req.LayoutBounds().TextBounds(rect);
+    }
+    else {
+        req.LayoutBounds().TextBounds({ 10.0f,10.0f,10.0f,10.0f });
+    }
+}
+void ImGui_Uwp_EveryUpdate_Frame() {
+    static bool wantinput = false;
+    auto& io = ImGui::GetIO();
+    if(io.WantTextInput && io.WantCaptureMouseUnlessPopupClose) {
+        if(!wantinput) {
+            try {
+                if(!editContext) {
+                    return;
+                }
+                auto _lastActiveID = ImGui::GetActiveID();
+                // 首次焦点时通知当前文本内容
+                if(ImGuiInputTextState* state = ImGui::GetInputTextState(_lastActiveID)) {
+                    lastActiveID = _lastActiveID;
+                    wantinput = true;
+                    CoreApplication::MainView().CoreWindow().DispatcherQueue().TryEnqueue([=]() {
+                        editContext.NotifyLayoutChanged();
+                        editContext.NotifyFocusEnter();
+                        editContext.NotifyTextChanged(
+                            CoreTextRange{ state->GetCursorPos(), /*static_cast<int32_t>(state->TextA.Size)*/state->GetCursorPos() + 1},
+                            state->TextLen,
+                            CoreTextRange{ state->GetSelectionStart(), state->GetSelectionEnd()}
+                        );
+                        // 4. 重置选择状态 (触发 SelectionUpdating)
+                        editContext.NotifySelectionChanged(CoreTextRange{
+                            state->HasSelection() ? state->GetSelectionStart(): state->GetCursorPos(),
+                            state->HasSelection() ? state->GetSelectionEnd() : state->GetCursorPos()});
+                        
+                        //inputPane.TryShow();
+                    });
+                }
+                else {
+                    spdlog::error("ImGui::GetInputTextState(lastActiveID) == nullptr");
+                }
+            }
+            catch(std::exception& err) {
+                spdlog::error("err:{}",err.what());
+            }
+        }
+    }
+    else {
+        if(wantinput) {
+            wantinput = false;
+            CoreApplication::MainView().CoreWindow().DispatcherQueue().TryEnqueue([&]() {
+                if(editContext) {
+                    editContext.NotifyFocusLeave();
+                    //inputPane.TryHide();
+                }
+            });
+            lastActiveID = 0;
+        }
+    }
+}
 
 static winrt::event_token token_cookie_keydown;
 static winrt::event_token token_cookie_keyup;
@@ -475,8 +765,18 @@ static winrt::event_token token_cookie_pointMoved;
 static winrt::event_token token_cookie_pointWheelChanged;
 
 static winrt::event_token token_cookie_lanjie;
+// 输入法输入测试
+
+static winrt::event_token token_cookie_IMEChangedLg;
 
 
+static winrt::event_token token_cookie_IMETextRequested;
+static winrt::event_token token_cookie_IMETextUpdating;
+static winrt::event_token token_cookie_IMESelectionUpdating;
+static winrt::event_token token_cookie_IMESelectionRequested;
+static winrt::event_token token_cookie_IMELayoutRequested;
+static winrt::event_token token_cookie_IMECompositionStarted;
+static winrt::event_token token_cookie_IMECompositionCompleted;
 
 // on CoreWindow Thread Call
 void registerCoreWindowEventHandle() {
@@ -496,17 +796,45 @@ void registerCoreWindowEventHandle() {
         // 注册事件
         auto core = CoreWindow::GetForCurrentThread();
         win = core;
-        token_cookie_keydown = core.KeyDown(TypedEventHandler<CoreWindow, KeyEventArgs>(&keydown));
-        token_cookie_keyup = core.KeyUp(TypedEventHandler<CoreWindow, KeyEventArgs>(&keyup));
-        token_cookie_characterReceived = core.CharacterReceived(TypedEventHandler<CoreWindow, CharacterReceivedEventArgs>(&characterReceived));
+        if(win) {
+            token_cookie_keydown = core.KeyDown(TypedEventHandler<CoreWindow, KeyEventArgs>(&keydown));
+            token_cookie_keyup = core.KeyUp(TypedEventHandler<CoreWindow, KeyEventArgs>(&keyup));
+            //token_cookie_characterReceived = core.CharacterReceived(TypedEventHandler<CoreWindow, CharacterReceivedEventArgs>(&characterReceived));
 
-        token_cookie_pointPressed = core.PointerPressed(TypedEventHandler<CoreWindow, PointerEventArgs>(&OnPointerPressed));
-        token_cookie_pointReleased = core.PointerReleased(TypedEventHandler<CoreWindow, PointerEventArgs>(&OnPointerReleased));
-        token_cookie_pointMoved = core.PointerMoved(TypedEventHandler<CoreWindow, PointerEventArgs>(&OnPointerMoved));
-        token_cookie_pointWheelChanged = core.PointerWheelChanged(TypedEventHandler<CoreWindow, PointerEventArgs>(&OnPointerWheelChanged));
+            token_cookie_pointPressed = core.PointerPressed(TypedEventHandler<CoreWindow, PointerEventArgs>(&OnPointerPressed));
+            token_cookie_pointReleased = core.PointerReleased(TypedEventHandler<CoreWindow, PointerEventArgs>(&OnPointerReleased));
+            token_cookie_pointMoved = core.PointerMoved(TypedEventHandler<CoreWindow, PointerEventArgs>(&OnPointerMoved));
+            token_cookie_pointWheelChanged = core.PointerWheelChanged(TypedEventHandler<CoreWindow, PointerEventArgs>(&OnPointerWheelChanged));
+            //token_cookie_lanjie = core.Dispatcher().AcceleratorKeyActivated(TypedEventHandler<CoreDispatcher, AcceleratorKeyEventArgs>(&OnLanJie));
+        }
 
-        //token_cookie_lanjie = core.Dispatcher().AcceleratorKeyActivated(TypedEventHandler<CoreDispatcher, AcceleratorKeyEventArgs>(&OnLanJie));
+        // 尝试解决输入法问题
+        m_manager = CoreTextServicesManager::GetForCurrentView();
+        token_cookie_IMEChangedLg = m_manager.InputLanguageChanged([=](CoreTextServicesManager const& sender, auto const& args) {
+            //spdlog::debug("切换语言，我被调用");
+            
+        });
+        inputPane = InputPane::GetForCurrentView();
+        editContext = m_manager.CreateEditContext();
+        if(editContext) {
+            // 必须设置：自动显示输入面板（软键盘）
+            editContext.InputPaneDisplayPolicy(CoreTextInputPaneDisplayPolicy::Automatic);
+            editContext.InputScope(CoreTextInputScope::Text);
+
+            token_cookie_IMETextRequested = editContext.TextRequested(TypedEventHandler<CoreTextEditContext, CoreTextTextRequestedEventArgs>(&OnTextRequested));
+            token_cookie_IMELayoutRequested = editContext.LayoutRequested(TypedEventHandler<CoreTextEditContext, CoreTextLayoutRequestedEventArgs>(&OnLayoutRequested));
+            token_cookie_IMESelectionUpdating = editContext.SelectionUpdating(TypedEventHandler<CoreTextEditContext, CoreTextSelectionUpdatingEventArgs>(&OnSelectionUpdating));
+            token_cookie_IMESelectionRequested = editContext.SelectionRequested(TypedEventHandler<CoreTextEditContext, CoreTextSelectionRequestedEventArgs>(&OnSelectionRequested));
+
+            token_cookie_IMETextUpdating = editContext.TextUpdating(TypedEventHandler<CoreTextEditContext, CoreTextTextUpdatingEventArgs>(&OnTextUpdating));
+            token_cookie_IMECompositionStarted = editContext.CompositionStarted(TypedEventHandler<CoreTextEditContext, CoreTextCompositionStartedEventArgs>(&OnCompositionStarted));
+            token_cookie_IMECompositionCompleted = editContext.CompositionCompleted(TypedEventHandler<CoreTextEditContext, CoreTextCompositionCompletedEventArgs>(&OnCompositionCompleted));
+        }
+        else {
+            spdlog::error("编辑器上下文创建失败");
+        }
     });
+
 }
 
 void unregisterCoreWindowEventHandle() {
@@ -514,7 +842,7 @@ void unregisterCoreWindowEventHandle() {
         // 取消注册事件
         win.KeyDown(token_cookie_keydown);
         win.KeyUp(token_cookie_keyup);
-        win.CharacterReceived(token_cookie_characterReceived);
+        //win.CharacterReceived(token_cookie_characterReceived);
 
         win.PointerPressed(token_cookie_pointPressed);
         win.PointerReleased(token_cookie_pointReleased);
@@ -522,5 +850,19 @@ void unregisterCoreWindowEventHandle() {
         win.PointerWheelChanged(token_cookie_pointWheelChanged);
         
         //win.Dispatcher().AcceleratorKeyActivated(token_cookie_lanjie);
+    }
+    if(m_manager) {
+        editContext.NotifyFocusLeave();
+        m_manager.InputLanguageChanged(token_cookie_IMEChangedLg);
+    }
+    if(editContext) {
+        editContext.TextRequested(token_cookie_IMETextRequested);
+        editContext.TextUpdating(token_cookie_IMETextUpdating);
+        editContext.SelectionUpdating(token_cookie_IMESelectionUpdating);
+        editContext.SelectionRequested(token_cookie_IMESelectionRequested);
+
+        editContext.LayoutRequested(token_cookie_IMELayoutRequested);
+        editContext.CompositionStarted(token_cookie_IMECompositionStarted);
+        editContext.CompositionCompleted(token_cookie_IMECompositionCompleted);
     }
 }
