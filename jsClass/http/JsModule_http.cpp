@@ -164,6 +164,9 @@ static JSValue js_http_ajax_request(JSContext* ctx, JSValueConst this_val, int a
     //拿到download属性回调函数
     JSValue JDownloadCall = JS_GetPropertyStr(ctx, argv[0], "download");
     bool hasDownloadCall = JS_IsFunction(ctx, JDownloadCall);
+    //拿到error属性回调函数
+    JSValue JErrorCall = JS_GetPropertyStr(ctx, argv[0], "error");
+    bool hasErrorCall = JS_IsFunction(ctx, JErrorCall);
 
     //followlocation属性bool值 301状态是否自动跳转
     JSValue Jfollowlocation = JS_GetPropertyStr(ctx, argv[0], "followlocation");
@@ -207,7 +210,7 @@ static JSValue js_http_ajax_request(JSContext* ctx, JSValueConst this_val, int a
         https.set_follow_location(true);
     }
     if(isTimeout) {
-        https.set_connection_timeout(isTimeout.value() * 1000);
+        https.set_connection_timeout(isTimeout.value() * 1000);//*1000后是毫秒
     }
     
     httplib::Headers Clientheaders = {};
@@ -280,6 +283,17 @@ static JSValue js_http_ajax_request(JSContext* ctx, JSValueConst this_val, int a
     if(!res) {
         if(hasSuccessCall) {
             return JS_UNDEFINED;
+        }
+        if(hasErrorCall) {
+            auto err = httplib::to_string(res.error());
+            auto jserr = JSTool::fromString(err);
+            JSValue par[] = { jserr };
+            JSValue backret = JS_Call(ctx, JErrorCall, JS_NULL, 1, par);
+            if(JS_IsException(backret)) {
+                spdlog::error(JSManager::getInstance()->getErrorStack());
+            }
+            JS_FreeValue(ctx, jserr);
+            return JS_NULL;
         }
         return JS_NULL;
     }
