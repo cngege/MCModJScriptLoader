@@ -5,10 +5,11 @@ declare module "http" {
     data?: Record<string, string>;// TODO
     headers?: Record<string, string>;//请求头
     body?: string | Record<string, any>;// 请求参数
-    timeout?: number;
+    timeout?: number;                   // 单位ms
     followlocation?: boolean;
     download? : (len : number, total : number) => boolean;
     success? : (res : Response)=>void;
+    error? :(err:string)=>void;
   }
 
   export interface Response {

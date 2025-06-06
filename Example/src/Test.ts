@@ -7,6 +7,9 @@ import ClientInstance from './module/SDK/ClientInstance'
 import MinecraftGame from './module/SDK/MinecraftGame'
 import GuiData from './module/SDK/GuiData'
 //import ClientInstance from 'https://disk.ningsuan.com.cn/index.php?explorer/share/file&hash=5365IsSFHRgVR5UvNiDNr8HqFniXKLi32dWpekJJ6CTagNaJHBpLObWgeRcwdINF4DJzLQLGcQ&name=/ClientInstance.js&_etag=bc55b&size=1549'
+import MicrofostTr from './module/Tr/MicrosoftBing/Tr'
+import { TrLanguage, LanguateText } from './module/Tr/TrBase'
+
 
 (function(模块 : 类型_公共模块){
     const logger = new spdlog();
@@ -48,7 +51,7 @@ import GuiData from './module/SDK/GuiData'
         显示GuiData相关信息: false,
     }
 
-
+    let MicroTr : MicrofostTr;
     事件系统.监听事件("onRender", () => {
         if(!模块.enable) return;
         if(ImGui.Begin("测试窗口", (_ = 模块.enable) => 模块.enable = _)){
@@ -150,6 +153,21 @@ import GuiData from './module/SDK/GuiData'
                         logger.info("X 被释放");
                     });
                     
+                }
+            }
+            if(ImGui.CollapsingHeader("6/6")){
+                if(ImGui.Button("微软翻译测试 Init")){
+                    MicroTr = new MicrofostTr()
+                    MicroTr.Init();
+                }
+                if(ImGui.Button("微软翻译 翻译到日语 Init")){
+                    MicroTr.OnlineTr("你好，世界", LanguateText.简体中文,LanguateText.日语,(str:string, lg:number, haserr:boolean,errstr:string)=>{
+                        if(haserr){
+                            logger.error("微软翻译测试出错",errstr);
+                        }else{
+                            logger.info("翻译结果:",str);
+                        }
+                    })
                 }
             }
         }

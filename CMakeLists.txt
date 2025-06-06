@@ -42,11 +42,11 @@ set(GITPROXY_HEADER https://ghproxy.cn/https://)
 if(DEFINED GitHubActions)
 	set(LIBSSL_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libssl.lib)
 	set(CRYPTO_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libcrypto.lib)
-	set(WINRT_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.2/cppwinrt_fast_forwarder.lib)
+	set(WINRT_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.2/cppwinrt_fast_forwarder-2.0.250303.1.lib)
 else()
 	set(LIBSSL_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libssl.lib)
 	set(CRYPTO_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libcrypto.lib)
-	set(WINRT_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.2/cppwinrt_fast_forwarder.lib)
+	set(WINRT_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.2/cppwinrt_fast_forwarder-2.0.250303.1.lib)
 endif()
 
 # 新建openssl文件夹

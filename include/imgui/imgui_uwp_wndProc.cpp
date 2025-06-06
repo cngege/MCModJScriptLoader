@@ -283,6 +283,10 @@ static ImGuiKey ImGui_ImplUwp_VirtualKeyToImGuiKey(WPARAM wParam) {
     }
 }
 
+// 按下退格键的那一刻记录文本
+// 松开的时候 传递到输入法
+void KeyEvent_backspace(bool down);
+
 void keydown(CoreWindow const& sender, KeyEventArgs const& args) {
     if(ImGui::GetCurrentContext() == nullptr)
         return;
@@ -304,10 +308,13 @@ void keydown(CoreWindow const& sender, KeyEventArgs const& args) {
             vk = IM_VK_KEYPAD_ENTER;
 
         // Submit key event
-        const ImGuiKey key = ImGui_ImplUwp_VirtualKeyToImGuiKey(vk);
+        const ImGuiKey _key = ImGui_ImplUwp_VirtualKeyToImGuiKey(vk);
+        if(_key == ImGuiKey_Backspace) {
+            KeyEvent_backspace(true); // 去处理输入法相关
+        }
         const int scancode = keyStatus.ScanCode;
-        if(key != ImGuiKey_None)
-            ImGui_ImplUWP_AddKeyEvent(key, is_key_down, vk, scancode);
+        if(_key != ImGuiKey_None)
+            ImGui_ImplUWP_AddKeyEvent(_key, is_key_down, vk, scancode);
 
         // Submit individual left/right modifier events
         if(vk == VK_SHIFT) {
@@ -356,6 +363,9 @@ void keyup(CoreWindow const& sender, KeyEventArgs const& args) {
         const int scancode = keyStatus.ScanCode;
         if(_key != ImGuiKey_None)
             ImGui_ImplUWP_AddKeyEvent(_key, is_key_down, vk, scancode);
+        //if(_key == ImGuiKey_Backspace) {
+        //    KeyEvent_backspace(false); // 去处理输入法相关
+        //}
 
         // Submit individual left/right modifier events
         if(vk == VK_SHIFT) {
@@ -490,6 +500,7 @@ static void OnPointerWheelChanged(CoreWindow const& sender, PointerEventArgs con
 }
 
 void OnSelectionRequested(CoreTextEditContext const& sender, CoreTextSelectionRequestedEventArgs const& args) {
+    //return;
     auto request = args.Request();
     ImGuiInputTextState* state = ImGui::GetInputTextState(lastActiveID);
     if(!state || !state->ID) {
@@ -512,19 +523,95 @@ void OnSelectionRequested(CoreTextEditContext const& sender, CoreTextSelectionRe
 
 }
 
+std::string utf8_substr(const std::string& str,
+                        uint32_t start,
+                        uint32_t len = std::numeric_limits<uint32_t>::max()) {
+    // 处理边界情况
+    if(str.empty() || len == 0) return "";
+
+    // 获取字节长度
+    const char* ptr = str.c_str();
+    size_t byteLen = str.size();
+
+    uint32_t char_count = 0;  // 当前字符计数
+    size_t start_byte = 0;  // 起始字节位置
+    size_t end_byte = byteLen; // 结束字节位置
+    bool start_found = false;
+    uint32_t count = 0;
+
+    // 遍历所有字节
+    for(size_t i = 0; i < byteLen; ) {
+        // 检查当前字符字节数
+        int char_bytes = 1;
+        if((ptr[i] & 0x80) == 0) {
+            // 单字节字符 (0xxxxxxx)
+        }
+        else if((ptr[i] & 0xE0) == 0xC0) {
+            // 双字节字符 (110xxxxx)
+            char_bytes = 2;
+        }
+        else if((ptr[i] & 0xF0) == 0xE0) {
+            // 三字节字符 (1110xxxx)
+            char_bytes = 3;
+        }
+        else if((ptr[i] & 0xF8) == 0xF0) {
+            // 四字节字符 (11110xxx)
+            char_bytes = 4;
+        }
+        else {
+            // 无效UTF-8序列
+            throw std::runtime_error("Invalid UTF-8 sequence");
+        }
+
+        // 检查范围是否完整
+        if(i + char_bytes > byteLen) {
+            throw std::runtime_error("Truncated UTF-8 character");
+        }
+
+        // 检查起始位置
+        if(char_count == start) {
+            start_byte = i;
+            start_found = true;
+        }
+
+        // 检查结束位置
+        if(start_found) {
+            if(count >= len) {
+                end_byte = i;
+                break;
+            }
+            count++;
+        }
+
+        // 移动到下一个字符
+        i += char_bytes;
+        char_count++;
+    }
+
+    // 返回截取的子串
+    return str.substr(start_byte, end_byte - start_byte);
+}
+
 // 返回指定的文本范围。请注意,系统可能会要求更多文本
 // 比存在于文本缓冲区中。
 static void OnTextRequested(CoreTextEditContext const& sender, CoreTextTextRequestedEventArgs const& args) {
     CoreTextTextRequest request = args.Request();
+    CoreTextRange requestRange = request.Range();
     ImGuiInputTextState* state = ImGui::GetInputTextState(lastActiveID);
     if(!state || !state->ID) {
         return;
     }
-    
-    auto hstrText = winrt::to_hstring(std::string(state->TextA.Data));
-    request.Text(hstrText);
+    if(requestRange.EndCaretPosition == -1) {
+        auto hstrText = winrt::to_hstring(std::string(state->TextA.Data));
+        request.Text(hstrText);
+    }else{
+        std::string t(state->TextA.Data);
+        auto t2 = utf8_substr(t, requestRange.StartCaretPosition, requestRange.EndCaretPosition - requestRange.StartCaretPosition);
+        auto hstrText = winrt::to_hstring(t2);
+        request.Text(hstrText);
+    }
 }
-
+// 字数转为字节偏移
 static int utf8_offset(ImVector<char> strs, int offset) {
     int pos = 0;    // 字节索引位置
     int count = 0;  // 已跳过的字符计数
@@ -612,7 +699,13 @@ static void OnTextUpdating(CoreTextEditContext const& sender, CoreTextTextUpdati
         }
     }
     last节长度 = static_cast<int>(strlen(utf8Text.data()));
-    io.AddInputCharactersUTF8(utf8Text.data());
+    if(/*utf8Text == "" || */utf8Text.empty()) {// 两个都为true
+        io.AddKeyEvent(ImGuiKey::ImGuiKey_Backspace, true);
+        io.AddKeyEvent(ImGuiKey::ImGuiKey_Backspace, false);
+    }
+    else {
+        io.AddInputCharactersUTF8(utf8Text.data());
+    }
     //state->CursorAnimReset();
     args.Result(CoreTextTextUpdatingResult::Succeeded);
 }
@@ -658,8 +751,8 @@ static void OnSelectionUpdating(CoreTextEditContext const& sender, CoreTextSelec
     if(state) {
         // 更新系统选区范围
         auto select = args.Selection();
-        select.StartCaretPosition = std::min(state->GetSelectionStart(), state->GetSelectionEnd());
-        select.EndCaretPosition = std::max(state->GetSelectionStart(), state->GetSelectionEnd());
+        select.StartCaretPosition = state->HasSelection()? std::min(state->GetSelectionStart(), state->GetSelectionEnd()) : state->GetCursorPos();
+        select.EndCaretPosition = state->HasSelection() ? std::max(state->GetSelectionStart(), state->GetSelectionEnd()) : state->GetCursorPos();
         args.Result(CoreTextSelectionUpdatingResult::Succeeded);
     }
     args.Result(CoreTextSelectionUpdatingResult::Failed);
@@ -702,6 +795,9 @@ static void OnLayoutRequested(CoreTextEditContext const& sender, CoreTextLayoutR
         req.LayoutBounds().TextBounds({ 10.0f,10.0f,10.0f,10.0f });
     }
 }
+
+
+bool 在输入框按下了退格键 = false;
 void ImGui_Uwp_EveryUpdate_Frame() {
     static bool wantinput = false;
     auto& io = ImGui::GetIO();
@@ -753,6 +849,120 @@ void ImGui_Uwp_EveryUpdate_Frame() {
             lastActiveID = 0;
         }
     }
+    if(在输入框按下了退格键) {
+        if(ImGui::IsKeyReleased(ImGuiKey_Backspace)) {
+            KeyEvent_backspace(false);
+        }
+    }
+}
+
+// 比较函数
+static void CompareTextChanges(
+    const ImVector<char>& oldText,
+    const ImVector<char>& newText,
+    CoreTextRange& modifiedRange,
+    int32_t& newLength) {
+    // 1. 计算公共前缀长度
+    uint32_t prefixLen = 0;
+    const uint32_t minSize = static_cast<uint32_t>(std::min(oldText.size(), newText.size()));//考虑到应该不会小于0，所以强转uint32_t
+    while(prefixLen < minSize && oldText[prefixLen] == newText[prefixLen]) {
+        ++prefixLen;
+    }
+
+    // 2. 计算公共后缀长度
+    uint32_t suffixLen = 0;
+    uint32_t oldIndex = static_cast<uint32_t>(oldText.size());
+    uint32_t newIndex = static_cast<uint32_t>(newText.size());
+
+    // 从后向前比较，直到遇到前缀边界或差异
+    while(oldIndex > prefixLen && newIndex > prefixLen) {
+        if(oldText[oldIndex - 1] != newText[newIndex - 1]) break;
+        --oldIndex;
+        --newIndex;
+        ++suffixLen;
+    }
+
+    // 3. 计算修改范围
+    modifiedRange = {
+        static_cast<int>(prefixLen),  // 修改起始位置
+        static_cast<int>(oldText.size() - suffixLen)  // 修改结束位置
+    };
+
+    // 4. 计算新增文本长度
+    const uint32_t newContentLength =
+        static_cast<uint32_t>(newText.size()) - prefixLen - suffixLen;
+    newLength = newContentLength;
+}
+
+// 记录的数据 暂时不考虑跨输入框的操作
+ImVector<char> 按下时的文本 = {};
+
+static void KeyEvent_backspace(bool down) {
+    if(!down) {
+        在输入框按下了退格键 = false;
+    }
+    ImGuiInputTextState* state = ImGui::GetInputTextState(lastActiveID);
+    if(!state || !state->ID) {
+        在输入框按下了退格键 = false;
+        return;//不在输入框 不管
+    }
+    if(down) {
+        // 记录文字
+        按下时的文本 = state->TextA;
+        在输入框按下了退格键 = true;
+        // 重置输入法文本
+        CoreApplication::MainView().CoreWindow().DispatcherQueue().TryEnqueue([=]() {
+            editContext.NotifyFocusLeave();
+        });
+    }
+    else {
+        
+        在输入框按下了退格键 = false;
+        // 通知文本变化
+        CoreApplication::MainView().CoreWindow().DispatcherQueue().TryEnqueue([=]() {
+            editContext.NotifyLayoutChanged();
+            editContext.NotifyFocusEnter();
+            editContext.NotifyTextChanged(
+                CoreTextRange{ 0, 1},
+                state->TextLen,
+                CoreTextRange{ state->GetCursorPos(), state->GetCursorPos() }
+            );
+            // 4. 重置选择状态 (触发 SelectionUpdating)
+            editContext.NotifySelectionChanged(CoreTextRange{
+                state->GetCursorPos(),
+                state->GetCursorPos() });
+
+            //inputPane.TryShow();
+        });
+
+        return;
+        在输入框按下了退格键 = false;
+        // 通知
+        // 比较两个文本
+
+        CoreTextRange 变化位置{};
+        int  变化长度 = 0;
+        CompareTextChanges(按下时的文本, state->TextA, 变化位置, 变化长度);
+
+        CoreTextRange 最后位置{};
+        if(state->HasSelection())
+        {
+            最后位置 = { state->GetSelectionStart(), state->GetSelectionEnd() };
+        }
+        else {
+            最后位置 = { state->GetCursorPos(), state->GetCursorPos() };
+        }
+        editContext.NotifyTextChanged(
+            变化位置,
+            变化长度,
+            最后位置
+        );
+
+        //重置选择状态 (触发 SelectionUpdating)
+        editContext.NotifySelectionChanged(CoreTextRange{
+            最后位置.StartCaretPosition,最后位置.EndCaretPosition});
+    }
+
 }
 
 static winrt::event_token token_cookie_keydown;
@@ -824,7 +1034,7 @@ void registerCoreWindowEventHandle() {
             token_cookie_IMETextRequested = editContext.TextRequested(TypedEventHandler<CoreTextEditContext, CoreTextTextRequestedEventArgs>(&OnTextRequested));
             token_cookie_IMELayoutRequested = editContext.LayoutRequested(TypedEventHandler<CoreTextEditContext, CoreTextLayoutRequestedEventArgs>(&OnLayoutRequested));
             token_cookie_IMESelectionUpdating = editContext.SelectionUpdating(TypedEventHandler<CoreTextEditContext, CoreTextSelectionUpdatingEventArgs>(&OnSelectionUpdating));
-            token_cookie_IMESelectionRequested = editContext.SelectionRequested(TypedEventHandler<CoreTextEditContext, CoreTextSelectionRequestedEventArgs>(&OnSelectionRequested));
+            //token_cookie_IMESelectionRequested = editContext.SelectionRequested(TypedEventHandler<CoreTextEditContext, CoreTextSelectionRequestedEventArgs>(&OnSelectionRequested));
 
             token_cookie_IMETextUpdating = editContext.TextUpdating(TypedEventHandler<CoreTextEditContext, CoreTextTextUpdatingEventArgs>(&OnTextUpdating));
             token_cookie_IMECompositionStarted = editContext.CompositionStarted(TypedEventHandler<CoreTextEditContext, CoreTextCompositionStartedEventArgs>(&OnCompositionStarted));
@@ -838,31 +1048,33 @@ void registerCoreWindowEventHandle() {
 }
 
 void unregisterCoreWindowEventHandle() {
-    if(win) {
-        // 取消注册事件
-        win.KeyDown(token_cookie_keydown);
-        win.KeyUp(token_cookie_keyup);
-        //win.CharacterReceived(token_cookie_characterReceived);
+    CoreApplication::MainView().CoreWindow().DispatcherQueue().TryEnqueue([=]() {
+        if(win) {
+            // 取消注册事件
+            win.KeyDown(token_cookie_keydown);
+            win.KeyUp(token_cookie_keyup);
+            //win.CharacterReceived(token_cookie_characterReceived);
 
-        win.PointerPressed(token_cookie_pointPressed);
-        win.PointerReleased(token_cookie_pointReleased);
-        win.PointerMoved(token_cookie_pointMoved);
-        win.PointerWheelChanged(token_cookie_pointWheelChanged);
-        
-        //win.Dispatcher().AcceleratorKeyActivated(token_cookie_lanjie);
-    }
-    if(m_manager) {
-        editContext.NotifyFocusLeave();
-        m_manager.InputLanguageChanged(token_cookie_IMEChangedLg);
-    }
-    if(editContext) {
-        editContext.TextRequested(token_cookie_IMETextRequested);
-        editContext.TextUpdating(token_cookie_IMETextUpdating);
-        editContext.SelectionUpdating(token_cookie_IMESelectionUpdating);
-        editContext.SelectionRequested(token_cookie_IMESelectionRequested);
+            win.PointerPressed(token_cookie_pointPressed);
+            win.PointerReleased(token_cookie_pointReleased);
+            win.PointerMoved(token_cookie_pointMoved);
+            win.PointerWheelChanged(token_cookie_pointWheelChanged);
 
-        editContext.LayoutRequested(token_cookie_IMELayoutRequested);
-        editContext.CompositionStarted(token_cookie_IMECompositionStarted);
-        editContext.CompositionCompleted(token_cookie_IMECompositionCompleted);
-    }
+            //win.Dispatcher().AcceleratorKeyActivated(token_cookie_lanjie);
+        }
+        if(m_manager) {
+            editContext.NotifyFocusLeave();
+            m_manager.InputLanguageChanged(token_cookie_IMEChangedLg);
+        }
+        if(editContext) {
+            editContext.TextRequested(token_cookie_IMETextRequested);
+            editContext.TextUpdating(token_cookie_IMETextUpdating);
+            editContext.SelectionUpdating(token_cookie_IMESelectionUpdating);
+            //editContext.SelectionRequested(token_cookie_IMESelectionRequested);
+
+            editContext.LayoutRequested(token_cookie_IMELayoutRequested);
+            editContext.CompositionStarted(token_cookie_IMECompositionStarted);
+            editContext.CompositionCompleted(token_cookie_IMECompositionCompleted);
+        }
+    });
 }

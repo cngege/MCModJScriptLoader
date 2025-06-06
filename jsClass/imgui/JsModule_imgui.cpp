@@ -340,7 +340,7 @@ static JSValue js_imgui_RadioButton(JSContext* ctx, JSValueConst this_val, int a
         bool ret = ImGui::RadioButton(label->c_str(), *active);
         return JS_NewBool(ctx, ret);
     }
-    else { // 三参数
+    else if(argc >= 3) { // 三参数
         std::optional<std::string> label;
         std::optional<int> v_button;
 
@@ -357,8 +357,12 @@ static JSValue js_imgui_RadioButton(JSContext* ctx, JSValueConst this_val, int a
         auto ret_str = JSTool::ReferenceIntCall(argv[1], [&](int* v) {
             ret = ImGui::RadioButton(label->c_str(), v, *v_button);
         });
+        if(!ret_str.empty()) {
+            return JS_ThrowTypeError(ctx, ret_str.c_str());
+        }
         return JS_NewBool(ctx, ret);
     }
+    return JS_UNDEFINED;
 }
 
 // ProgressBar进度条

@@ -238,7 +238,7 @@ static auto stop(HMODULE hModule)->void {
         // 释放模块资源
         JSManager::getInstance()->freeNativeModule(rt);
         JSManager::getInstance()->disableJSManager();
-
+        // 释放了imgui中 输入相关的注册
         ModManager::getInstance()->disableMod((uintptr_t)hModule);
 
         // JS释放

@@ -44,7 +44,7 @@ interface 模块数据{
         return 0;
     }
 
-    let sign_玩家破坏方块 = new SignCode("玩家破坏方块特征码", true, true);
+    let sign_玩家破坏方块 = new SignCode("玩家破坏方块特征码", true, false);
     sign_玩家破坏方块.AddSign("48 89 5C 24 ? 55 56 57 41 54 41 55 41 56 41 57 48 8D 6C 24 ? 48 81 EC ? ? ? ? 48 8B 05 ? ? ? ? 48 33 C4 48 89 45 ? 4D 8B E8 4C 8B F2 4C 8B F9");
     sign_玩家破坏方块.AddSignCall("E8 ? ? ? ? E9 ? ? ? ? 49 8B CE E8 ? ? ? ? 48 85");
     sign_玩家破坏方块.AddSignCall("75 ? 4D 8B ? 48 8B 57 ? 49 8B CE E8", 13);

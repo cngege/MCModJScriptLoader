@@ -19,7 +19,6 @@ static JSValue js_http_get_request(JSContext * ctx, JSValueConst this_val, int a
     }
     const char* url_c = JS_ToCString(ctx, argv[0]);
     std::string url = std::string(url_c);
-    JS_FreeValue(ctx, argv[0]);
     JS_FreeCString(ctx, url_c);
 
     // 解析数据:
@@ -80,7 +79,6 @@ static JSValue js_http_post_request(JSContext* ctx, JSValueConst this_val, int a
     }
     const char* url_c = JS_ToCString(ctx, argv[0]);
     std::string url = std::string(url_c);
-    JS_FreeValue(ctx, argv[0]);
     JS_FreeCString(ctx, url_c);
 
     // 解析数据:

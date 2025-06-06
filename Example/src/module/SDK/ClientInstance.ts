@@ -8,8 +8,9 @@ import GuiData from './GuiData';
 const logger = new spdlog();
 
 export interface 队列类型回调{
-    mainCall:()=>void,
+    mainCall:(argv?:any[])=>void,
     CheckCall:()=>boolean
+    argv?:any[],
 }
 
 // 游戏线程执行队列
@@ -43,10 +44,18 @@ export default class ClientInstance {
                     // 跑队列
                     for(let i = 0; i < 游戏线程执行队列.length; i++){
                         if(typeof 游戏线程执行队列[i].CheckCall != 'function' || 游戏线程执行队列[i].CheckCall()){
-                            游戏线程执行队列[i].mainCall();
+                            try{
+                                if(游戏线程执行队列[i].argv)
+                                    游戏线程执行队列[i].mainCall(游戏线程执行队列[i].argv);
+                                else
+                                    游戏线程执行队列[i].mainCall();
+                            }catch(e){
+                                logger.error("Ontick游戏线程队列执行出现错误:",e);
+                            }
                             游戏线程执行队列.splice(i, 1);
                             i--;
                         }
+
                     }
 
                     // 拿到客户端单例

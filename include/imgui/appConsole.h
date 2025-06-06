@@ -42,7 +42,7 @@ struct ExampleAppConsole
         Commands.push_back("CLEAR");
         Commands.push_back("CLASSIFY");
         AutoScroll = true;
-        InputBox = true;
+        InputBox = false;
         PrintDebug = true;
         ShowDemoWindow = false;
         ScrollToBottom = false;
