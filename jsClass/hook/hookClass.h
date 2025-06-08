@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <string>
-#include "quickjs/quickjs.h"
+#include "../JSManager.h"
 #include "LightHook/LightHook.h"
 
 

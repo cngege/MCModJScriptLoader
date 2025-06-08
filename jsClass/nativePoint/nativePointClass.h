@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "quickjs/quickjs.h"
+#include "../JSManager.h"
 #include <vector>
 
 

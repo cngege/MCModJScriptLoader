@@ -1,5 +1,8 @@
 ﻿#pragma once
+#pragma warning(push, 0)
+#include "quickjs/quickjs.h"
 #include "quickjs/quickjs-libc.h"
+#pragma warning(pop)
 #include <optional>
 #include <functional>
 #include <string>
@@ -24,6 +27,8 @@ public:
 public:
     auto setctx(JSContext* ctx) -> void;
     auto getctx() -> JSContext* const;
+    auto setrt(JSRuntime* rt) -> void;
+    auto getrt() -> JSRuntime* const;
 
     auto loadNativeModule() -> void;
     auto freeNativeModule(JSRuntime*) -> void;
@@ -55,6 +60,7 @@ public:
 
 private:
     JSContext* m_ctx = nullptr;
+    JSRuntime* m_rt = nullptr;
 };
 
 #pragma endregion
@@ -74,10 +80,12 @@ public:
     public:
         JSClassRegister(JSClassID* id, JSClassDef* class_def, const char* class_name = nullptr){
             auto ctx = JSManager::getInstance()->getctx();
+            //auto rt = JSManager::getInstance()->getrt();
             auto rt = JS_GetRuntime(ctx);
             m_id = id;
-            JS_NewClassID(m_id);
+            //JS_NewClassID(rt, m_id);
             m_class_def = class_def;
+            JS_NewClassID(rt, m_id);
             JS_NewClass(rt, *m_id, m_class_def);
             if(class_name == nullptr)
                 m_class_name = class_def->class_name;
@@ -387,7 +395,7 @@ template<typename T>
 std::optional<std::vector<T>> JSTool::getArray(JSValue v, std::function<T(size_t, JSValue)> call) {
     auto ctx = JSManager::getInstance()->getctx();
     std::optional<std::vector<T>> ret{};
-    if(!JS_IsArray(ctx, v)) {
+    if(!JS_IsArray(v)) {
         return ret;
     }
     std::vector<T> retv{};

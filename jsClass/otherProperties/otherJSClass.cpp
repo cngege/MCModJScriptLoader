@@ -1,6 +1,5 @@
 ﻿
 #include "otherJSClass.h"
-#include "quickjs/quickjs.h"
 #include "../JSManager.h"
 #include "../hook/hookClass.h"
 #include <thread>

@@ -1,5 +1,4 @@
-﻿#include "quickjs/quickjs.h"
-#include <string>
+﻿#include <string>
 
 #include "../JSManager.h"
 #include "../client/utils/signcode.h"

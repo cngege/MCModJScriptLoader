@@ -33,7 +33,7 @@
 // TODO:...
 static JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_name, void* opaque) {
     std::string module = module_name;
-    if(std::string(module_name).starts_with("http://") || std::string(module_name).starts_with("https://")) {
+    if(std::string(module_name).starts_with("http:") || std::string(module_name).starts_with("https:")) {
         std::string url = module_name;
         return JSManager::getInstance()->loadModuleFromHttp(url);
     }
@@ -190,9 +190,11 @@ static auto start(HMODULE hModule) -> void {
 
     //JS Runner
     rt = JS_NewRuntime();
+    JS_SetMaxStackSize(rt, 0);
     ctx = JS_NewContext(rt);
     js_std_init_handlers(rt);
     JSManager::getInstance()->setctx(ctx);
+    JSManager::getInstance()->setrt(rt);
     JSManager::getInstance()->initJSManager();
 
     // 开启BigNumber
@@ -240,7 +242,6 @@ static auto stop(HMODULE hModule)->void {
         JSManager::getInstance()->disableJSManager();
         // 释放了imgui中 输入相关的注册
         ModManager::getInstance()->disableMod((uintptr_t)hModule);
-
         // JS释放
         JS_FreeContext(ctx);
         JS_FreeRuntime(rt);

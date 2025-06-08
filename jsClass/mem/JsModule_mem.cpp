@@ -1,5 +1,4 @@
-﻿#include "quickjs/quickjs.h"
-#include <string>
+﻿#include <string>
 
 #include "../../client/mem/mem.h"
 #include "../JSManager.h"
@@ -166,16 +165,16 @@ static JSValue 释放CPP字符串(JSContext* ctx, JSValueConst this_val, int arg
 }
 
 static const JSCFunctionListEntry js_mem_funcs[] = {
-    JS_CFUNC_DEF2("查找特征码", 1, js_findSig),
-    JS_CFUNC_DEF2("二次查找特征码", 1, js_findSigRelay),
-    JS_CFUNC_DEF2("获取基址", 0, js_getBase),
-    JS_CFUNC_DEF2("设置内存Bool值", 2, js_setBoolValue),
-    JS_CFUNC_DEF2("读取内存Bool值", 2, js_getBoolValue),
-    JS_CFUNC_DEF2("世界位置转屏幕位置", 2, js_WorldToScreen),
-    JS_CFUNC_DEF2("申请内存", 1, 申请内存),
-    JS_CFUNC_DEF2("释放内存", 1, 释放内存),
-    JS_CFUNC_DEF2("申请CPP字符串", 0, 申请CPP字符串),
-    JS_CFUNC_DEF2("释放CPP字符串", 1, 释放CPP字符串),
+    JS_CFUNC_DEF("查找特征码", 1, js_findSig),
+    JS_CFUNC_DEF("二次查找特征码", 1, js_findSigRelay),
+    JS_CFUNC_DEF("获取基址", 0, js_getBase),
+    JS_CFUNC_DEF("设置内存Bool值", 2, js_setBoolValue),
+    JS_CFUNC_DEF("读取内存Bool值", 2, js_getBoolValue),
+    JS_CFUNC_DEF("世界位置转屏幕位置", 2, js_WorldToScreen),
+    JS_CFUNC_DEF("申请内存", 1, 申请内存),
+    JS_CFUNC_DEF("释放内存", 1, 释放内存),
+    JS_CFUNC_DEF("申请CPP字符串", 0, 申请CPP字符串),
+    JS_CFUNC_DEF("释放CPP字符串", 1, 释放CPP字符串),
 };
 
 static int js_mem_init(JSContext* ctx, JSModuleDef* m) {

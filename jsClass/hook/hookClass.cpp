@@ -131,7 +131,7 @@ JSValue hookClass::constructor(JSContext* ctx, JSValueConst newTarget, int argc,
     if(ptr <= 0) {
         return JS_ThrowTypeError(ctx, "参数二指针不能小于等于0");
     }
-    if(!JS_IsArray(ctx, argv[2])) {
+    if(!JS_IsArray(argv[2])) {
         return JS_ThrowTypeError(ctx, "参数三作为一个调用约定应是一个NativeTypes数组");
     }
 

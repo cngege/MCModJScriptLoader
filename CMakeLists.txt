@@ -193,7 +193,7 @@ ENDIF()
 target_link_libraries(MCModJScriptLoader PRIVATE
 	${CMAKE_SOURCE_DIR}/lib/openssl/libssl.lib
 	${CMAKE_SOURCE_DIR}/lib/openssl/libcrypto.lib
-	${CMAKE_SOURCE_DIR}/lib/quickjs/quickjs.lib
+	${CMAKE_SOURCE_DIR}/lib/quickjs/quickjs-ng.lib
 	${CMAKE_SOURCE_DIR}/lib/dyncall/dyncall_s.lib
 	${CMAKE_SOURCE_DIR}/lib/dyncall/dyncallback_s.lib
 	${CMAKE_SOURCE_DIR}/lib/dyncall/dynload_s.lib

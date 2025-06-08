@@ -161,7 +161,7 @@ void imguiclass_init() {
     auto rt = JS_GetRuntime(ctx);
     /// ImGuiIO ///
     {
-        JS_NewClassID(&_ImGuiIO_id);
+        JS_NewClassID(rt, &_ImGuiIO_id);
         JS_NewClass(rt, _ImGuiIO_id, &_ImGuiIO_classevent);
         JSValue proto_imguio = JS_NewObject(ctx);
         {
@@ -175,7 +175,7 @@ void imguiclass_init() {
 
     /// ForegroundDrawList ///
     {
-        JS_NewClassID(&_ForegroundDrawList_id);
+        JS_NewClassID(rt, &_ForegroundDrawList_id);
         JS_NewClass(rt, _ForegroundDrawList_id, &_ForegroundDrawList_classevent);
 
         JSValue protoInstance = JS_NewObject(ctx);

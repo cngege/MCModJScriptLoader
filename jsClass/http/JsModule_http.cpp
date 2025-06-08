@@ -1,5 +1,4 @@
-﻿#include "quickjs/quickjs.h"
-#include "../JSManager.h"
+﻿#include "../JSManager.h"
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "http/httplib.h"
@@ -316,9 +315,9 @@ static JSValue js_http_ajax_request(JSContext* ctx, JSValueConst this_val, int a
 }
 
 static const JSCFunctionListEntry js_http_funcs[] = {
-    JS_CFUNC_DEF2("Get", 1, js_http_get_request),
-    JS_CFUNC_DEF2("Post", 1, js_http_post_request),
-    JS_CFUNC_DEF2("Ajax", 1, js_http_ajax_request),
+    JS_CFUNC_DEF("Get", 1, js_http_get_request),
+    JS_CFUNC_DEF("Post", 1, js_http_post_request),
+    JS_CFUNC_DEF("Ajax", 1, js_http_ajax_request),
 };
 
 static int js_http_init(JSContext* ctx, JSModuleDef* m)

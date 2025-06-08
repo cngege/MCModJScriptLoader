@@ -34,6 +34,14 @@ auto JSManager::getctx() -> JSContext* const {
     return m_ctx;
 }
 
+auto JSManager::setrt(JSRuntime* rt) -> void {
+    m_rt = rt;
+}
+
+auto JSManager::getrt() -> JSRuntime* const {
+    return m_rt;
+}
+
 JSModuleDef* js_init_module_mem(JSContext* ctx, const char* module_name);
 JSModuleDef* js_init_module_eventSystem(JSContext* ctx, const char* module_name);
 JSModuleDef* js_init_module_imgui(JSContext* ctx, const char* module_name);
@@ -44,6 +52,7 @@ JSModuleDef* js_init_module_http(JSContext* ctx, const char* module_name);
 auto JSManager::loadNativeModule() -> void {
     js_init_module_std(m_ctx, "std");
     js_init_module_os(m_ctx, "os");
+    js_init_module_bjson(m_ctx, "bjson");
 
     js_init_module_mem(m_ctx, "工具");
     js_init_module_eventSystem(m_ctx, "事件系统");
@@ -110,6 +119,14 @@ auto JSManager::loadModuleFromFile(const std::string& path) -> JSModuleDef* {
 auto JSManager::loadModuleFromHttp(const std::string& url) -> JSModuleDef* {
     static std::unordered_map<std::size_t, JSModuleDef*> onlyLoad{};
     try {
+
+        std::size_t hasx = std::hash<std::string>()(url); // 仅从url判断此库是否被加载过了, 避免重复的网络请求
+        // 从map缓存中找 是否被加载过了
+        auto it = onlyLoad.find(hasx);
+        if(it != onlyLoad.end()) {
+            return it->second;
+        }
+
         // 网络协议开头
         std::regex pattern(
             R"(^(?:(\w+):\/\/)?)"    // 协议 (可选)
@@ -136,13 +153,7 @@ auto JSManager::loadModuleFromHttp(const std::string& url) -> JSModuleDef* {
                 return nullptr;
             }
             std::string content = ret->body;
-            
-            std::size_t hasx = std::hash<std::string>()(content);
-            // 从map缓存中找 是否被加载过了
-            auto it = onlyLoad.find(hasx);
-            if(it != onlyLoad.end()) {
-                return it->second;
-            }
+
             JSValue val = JS_Eval(m_ctx, content.c_str(), content.size(), path.c_str(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY/* | JS_EVAL_TYPE_MASK*/);
             if(JS_IsException(val)) {
                 spdlog::error("JS Module Loader fail: {}", path);
@@ -628,7 +639,7 @@ JSValue JSTool::getConstructorValue(JSValue thisObj, JSClassID id, bool inherita
 std::optional<std::vector<JSValue>> JSTool::toArray(JSValue jsv) {
     auto ctx = JSManager::getInstance()->getctx();
     std::optional<std::vector<JSValue>> ret{};
-    if(!JS_IsArray(ctx, jsv)) {
+    if(!JS_IsArray(jsv)) {
         return ret;
     }
     std::vector<JSValue> v{};

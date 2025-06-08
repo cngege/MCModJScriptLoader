@@ -3,7 +3,7 @@
 #define JSCLASS_EVENTSYSTEM_JSMODULEEVENTSYSTEM_H
 
 #include <string>
-#include "quickjs/quickjs.h"
+#include "../JSManager.h"
 #include <functional>
 
 // 二进制程序内部广播事件

@@ -115,7 +115,7 @@ static JSValue js_broadcastEvent(JSContext* ctx, JSValueConst this_val, int argc
                 JSValue p[] = { ret };
 
                 if(!JS_IsUndefined(ret) && !callisNull && JS_IsFunction(ctx, argv[1])) {
-                    JS_BOOL b = JS_ToBool(ctx, ret);
+                    BOOL b = JS_ToBool(ctx, ret);
                     JS_Call(ctx, argv[1], this_val, 1, p);
                 }
                 JS_FreeValue(ctx, ret);
@@ -129,9 +129,9 @@ static JSValue js_broadcastEvent(JSContext* ctx, JSValueConst this_val, int argc
 
 static const JSCFunctionListEntry js_eventSys_funcs[] = {
     //JS_CFUNC_DEF("Get", 1, js_http_get_request),
-        JS_CFUNC_DEF2("监听事件", 1, js_listenEvent),
-        JS_CFUNC_DEF2("移除事件", 1, js_removeEvent),
-        JS_CFUNC_DEF2("事件广播", 1, js_broadcastEvent),
+        JS_CFUNC_DEF("监听事件", 1, js_listenEvent),
+        JS_CFUNC_DEF("移除事件", 1, js_removeEvent),
+        JS_CFUNC_DEF("事件广播", 1, js_broadcastEvent),
 };
 
 static int js_eventSys_init(JSContext* ctx, JSModuleDef* m) {
@@ -171,7 +171,7 @@ void NativeBroadcastEvent(const std::string& name, JSValueConst this_val, int ar
             }
 
             if(!JS_IsUndefined(ret) && callback != nullptr) {
-                JS_BOOL b = JS_ToBool(JSManager::getInstance()->getctx(), ret);
+                BOOL b = JS_ToBool(JSManager::getInstance()->getctx(), ret);
                 callback(b);
             }
             JS_FreeValue(ctx, ret);
