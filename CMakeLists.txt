@@ -43,10 +43,12 @@ if(DEFINED GitHubActions)
 	set(LIBSSL_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libssl.lib)
 	set(CRYPTO_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libcrypto.lib)
 	set(WINRT_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.2/cppwinrt_fast_forwarder-2.0.250303.1.lib)
+	set(QUICKJ-NG_URL https://github.com/cngege/cngege.github.io/releases/download/v0.1-beta.5/quickjs-ng.lib)
 else()
 	set(LIBSSL_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libssl.lib)
 	set(CRYPTO_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.1/libcrypto.lib)
 	set(WINRT_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.2/cppwinrt_fast_forwarder-2.0.250303.1.lib)
+	set(QUICKJ-NG_URL ${GITPROXY_HEADER}github.com/cngege/cngege.github.io/releases/download/v0.1-beta.5/quickjs-ng.lib)
 endif()
 
 # 新建openssl文件夹
@@ -76,7 +78,7 @@ IF(NOT LOCAL_OPENSSL_SSL_LIB)
 		# 从设定的 URL 地址下载相应的压缩包
 	FILE(DOWNLOAD ${LIBSSL_URL}
 		${LOCAL_OPENSSL_LIBRARIES_PATH}/${OPENSSL_SSL_NAME}
-		TIMEOUT 300 CACHE STRING "Timeout in seconds when downloading ${OPENSSL_SSL_NAME}"
+		TIMEOUT 300 CACHE STRING "下载超时${OPENSSL_SSL_NAME}"
 		STATUS ERR
 		SHOW_PROGRESS)
 	# 判断下载是否存在错误
@@ -94,7 +96,7 @@ IF(NOT LOCAL_OPENSSL_SSL_LIB)
 ENDIF()
 # 如果路径下存在压缩文件
 IF(LOCAL_OPENSSL_SSL_LIB)
-	MESSAGE(STATUS "Checking the direction of ${LOCAL_OPENSSL_LIBRARIES_PATH}/${OPENSSL_SSL_NAME}")
+	MESSAGE(STATUS "本地已存在文件 ${LOCAL_OPENSSL_LIBRARIES_PATH}/${OPENSSL_SSL_NAME}")
 ENDIF()
 
 # /////////////////////////////////////crypto库lib名称////////////////////////////////////////////////
@@ -113,7 +115,7 @@ IF(NOT LOCAL_OPENSSL_CRYPTO_LIB)
 		# 从设定的 URL 地址下载相应的压缩包
 	FILE(DOWNLOAD ${CRYPTO_URL}
 		${LOCAL_OPENSSL_LIBRARIES_PATH}/${OPENSSL_CRYPTO_NAME}
-		TIMEOUT 300 CACHE STRING "Timeout in seconds when downloading ${OPENSSL_CRYPTO_NAME}."
+		TIMEOUT 300 CACHE STRING "下载超时${OPENSSL_CRYPTO_NAME}."
 		STATUS ERR
 		SHOW_PROGRESS)
 	# 判断下载是否存在错误
@@ -131,7 +133,7 @@ IF(NOT LOCAL_OPENSSL_CRYPTO_LIB)
 ENDIF()
 # 如果路径下存在压缩文件
 IF(LOCAL_OPENSSL_CRYPTO_LIB)
-	MESSAGE(STATUS "Checking the direction of ${LOCAL_OPENSSL_LIBRARIES_PATH}/${OPENSSL_CRYPTO_NAME}")
+	MESSAGE(STATUS "本地已存在文件 ${LOCAL_OPENSSL_LIBRARIES_PATH}/${OPENSSL_CRYPTO_NAME}")
 ENDIF()
 
 # 包含 openssl 的头文件
@@ -166,7 +168,7 @@ IF(NOT LOCAL_WINRT_LIB)
 		# 从设定的 URL 地址下载相应的压缩包
 	FILE(DOWNLOAD ${WINRT_URL}
 		${LOCAL_WINRT_LIBRARIES_PATH}/${WINRT_NAME}
-		TIMEOUT 300 CACHE STRING "Timeout in seconds when downloading ${WINRT_NAME}."
+		TIMEOUT 300 CACHE STRING "下载超时${WINRT_NAME}."
 		STATUS ERR
 		SHOW_PROGRESS)
 	# 判断下载是否存在错误
@@ -184,9 +186,57 @@ IF(NOT LOCAL_WINRT_LIB)
 ENDIF()
 # 如果路径下存在压缩文件
 IF(LOCAL_WINRT_LIB)
-	MESSAGE(STATUS "Checking the direction of ${LOCAL_WINRT_LIBRARIES_PATH}/${WINRT_NAME}")
+	MESSAGE(STATUS "本地已存在文件 ${LOCAL_WINRT_LIBRARIES_PATH}/${WINRT_NAME}")
 ENDIF()
+# /////////////////////////////////////quickjs-ng库lib名称////////////////////////////////////////////////
+# 新建cppwinrt文件夹
+FIND_FILE(LOCAL_QUICKJS_LIBRARIES_PATH
+	NAMES ""
+	HINTS "lib/quickjs"
+	NO_DEFAULT_PATH)
+if(NOT EXISTS "lib/quickjs")
+	file(MAKE_DIRECTORY "lib/quickjs")
+	SET(LOCAL_QUICKJS_LIBRARIES_PATH "lib/quickjs")
+	MESSAGE(STATUS "Folder “lib/quickjs” created successfully.")
+endif()
 
+SET(QUICK_NAME "quickjs-ng.lib")
+# ssl远程下载地址
+MESSAGE(STATUS "Checking ${QUICK_NAME}...")
+# 判断库文件是否已经存在
+FIND_FILE(LOCAL_QUICKJ_LIB
+	NAMES ${QUICK_NAME}
+	HINTS "${PROJECT_SOURCE_DIR}/lib/quickjs"
+	NO_DEFAULT_PATH)
+MESSAGE(STATUS "Checking url link ${QUICKJ-NG_URL} ...")
+
+# 如果路径下没有目标文件
+IF(NOT LOCAL_QUICKJ_LIB)
+	MESSAGE(STATUS "Downloading ${QUICK_NAME} to ${LOCAL_QUICKJS_LIBRARIES_PATH} ...")
+		# 从设定的 URL 地址下载相应的压缩包
+	FILE(DOWNLOAD ${QUICKJ-NG_URL}
+		${LOCAL_QUICKJS_LIBRARIES_PATH}/${QUICK_NAME}
+		TIMEOUT 300 CACHE STRING "下载超时${QUICK_NAME}."
+		STATUS ERR
+		SHOW_PROGRESS)
+	# 判断下载是否存在错误
+	IF(ERR EQUAL 0)
+		# 如果下载无错误则设置压缩包名称标记下载成功
+		SET(LOCAL_QUICKJ_LIB "${LOCAL_QUICKJS_LIBRARIES_PATH}/${QUICK_NAME}")
+	#下载错误输出相关的提示信息
+	ELSE()
+		FILE(REMOVE ${LOCAL_QUICKJS_LIBRARIES_PATH}/${QUICK_NAME})
+		MESSAGE(STATUS "Download failed, error: ${ERR}")
+		MESSAGE(FATAL_ERROR
+		"You can try downloading ${QUICKJ-NG_URL} manually"
+		"using curl/wget or a similar tool")
+	ENDIF()
+
+ENDIF()
+# 如果路径下存在压缩文件
+IF(LOCAL_QUICKJ_LIB)
+	MESSAGE(STATUS "本地已存在文件 ${LOCAL_QUICKJS_LIBRARIES_PATH}/${QUICK_NAME}")
+ENDIF()
 
 
 # 链接相关库  

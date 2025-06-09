@@ -27,7 +27,9 @@ void nativePointClass::Reg() {
     JSTool::JSClassRegister(&nativePointClass::id, &_nativePointClass, _nativePointClass.class_name)
         .setPropFunc(nativePointClass::call, "call")
         .setPropFunc(nativePointClass::offset, "offset")
+        .setPropFunc(nativePointClass::offset, "add")
         .setPropFunc(nativePointClass::toNumber, "toNumber")
+        .setPropFunc(nativePointClass::toNumber, "valueOf") // 实现+obj 转为数字
         .setPropFunc(nativePointClass::setAgree, "setAgree")
         .setPropFunc(nativePointClass::setbool, "setbool")
         .setPropFunc(nativePointClass::getbool, "getbool")

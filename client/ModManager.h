@@ -51,9 +51,10 @@ public:
     auto registerImGuiMouseHandle() -> void;
     auto disableMod(uintptr_t) -> void;
 
-    auto readConfig() -> nlohmann::json;
-    auto writeConfig(nlohmann::json config) -> bool;
+    //auto readConfig() -> nlohmann::json;
+    //auto writeConfig(nlohmann::json config) -> bool;
 
+    auto getImGuiConsoleWindow() -> struct ExampleAppConsole*;
 private:
     bool modState = 0;
     std::filesystem::path m_moduleDir{};

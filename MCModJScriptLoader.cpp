@@ -22,6 +22,7 @@
 #include "imgui/imgui_uwp_wndProc.h"
 
 #include "quickjs/quickjs-libc.h"
+#include "client/ConfigManager.h"
 
 #include "jsClass/JSManager.h"
 #include "jsClass/spdlog/spdlogClass.h"
@@ -57,6 +58,7 @@ static JSModuleDef* js_module_loader_local(JSContext* ctx, const char* module_na
 uintptr_t gamelogger_ori = 0;
 HookInstance* gamelogger_info = nullptr;
 static void BedrockLogOutHook(UINT type, const char* fmt, ...) {
+    if(!ModManager::getInstance()->getImGuiConsoleWindow()->PrintMCLog) return;
     try {
         va_list va;
         va_start(va, fmt);
@@ -122,13 +124,16 @@ static auto start(HMODULE hModule) -> void {
     ModManager::getInstance()->setImLogPath("config/imgui_log.ini");
 
     ModManager::getInstance()->setOtherPath("ModConfig", "config/config.json");
-    if(!fs::exists(ModManager::getInstance()->getOtherPath("ModConfig"))) {
+    ConfigManager::getInstance()->setConfigPathByAlias("ModConfig");
+    if(!ConfigManager::getInstance()->isExists()) {
         std::fstream config(ModManager::getInstance()->getOtherPath("ModConfig").string(), std::ios::out);
         if(config.is_open()) {
             config << "{}" << std::endl;
             config.close();
         }
     }
+    nlohmann::json config = ConfigManager::getInstance()->loadConfig();
+    ModManager::getInstance()->getImGuiConsoleWindow()->ApplyConfig(config);
 
     auto file_logger = spdlog::basic_logger_mt("MCJSRunTime", ModManager::getInstance()->getPath("app.log").string());
     file_logger->sinks().push_back(std::make_shared<spdlog::sinks::callback_sink_mt>([](const spdlog::details::log_msg& msg) {
@@ -158,7 +163,6 @@ static auto start(HMODULE hModule) -> void {
     }));
     spdlog::set_default_logger(file_logger);
 
-    nlohmann::json config = ModManager::getInstance()->readConfig();
     if(config == NULL || !config.contains("log_level")) {
         spdlog::set_level(spdlog::level::info);
         spdlog::flush_on(spdlog::level::info);  // 日志保存等级
@@ -204,7 +208,9 @@ static auto start(HMODULE hModule) -> void {
     //JS_EnableBignumExt(ctx, true);
 
     JS_SetModuleLoaderFunc(rt, nullptr, js_module_loader_local, nullptr);
-    
+    JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker, NULL); 
+
+
     JSManager::getInstance()->loadNativeModule();
 
     spdlogClass::Reg();
@@ -215,7 +221,6 @@ static auto start(HMODULE hModule) -> void {
     JSManager::getInstance()->loadJSFromFoder();
 
     ModManager::getInstance()->registerImGuiMouseHandle();       //注册鼠标按键相关事件
-    JSManager::getInstance()->runstdLoop();                     // 耗时操作， 跑完JS队列， 使 setTimeout工作
     test();
     ModManager::getInstance()->loopback();                      // 循环等待卸载
     stop(hModule);

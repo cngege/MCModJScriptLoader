@@ -87,6 +87,19 @@ static JSValue ValidPtr(JSContext* ctx, JSValueConst newTarget, int argc, JSValu
     return JS_NewInt64(ctx, thi->ValidPtr());
 }
 
+static JSValue setDeepSearch(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
+    SignCode* thi = (SignCode*)JS_GetOpaque(newTarget, id);
+    if(argc >= 1) {
+        if(!JS_IsBool(argv[0])) return JS_ThrowTypeError(ctx, "参数1仅接受Bool值");
+        auto b = JS_ToBool(ctx, argv[0]);
+        thi->setDeepSearch(b);
+    }
+    else {
+        thi->setDeepSearch();
+    }
+    return JS_UNDEFINED;
+}
+
 static JSValue AddSign(JSContext* ctx, JSValueConst newTarget, int argc, JSValueConst* argv) {
     SignCode* thi = (SignCode*)JS_GetOpaque(newTarget, id);
     if(argc >= 1) {
@@ -164,6 +177,7 @@ static auto SignCode_Module_Reg() -> JSValue {
         .setPropFunc(get, "get")
         .setPropFunc(ValidSign, "ValidSign")
         .setPropFunc(ValidPtr, "ValidPtr")
+        .setPropFunc(setDeepSearch, "setDeepSearch")
         .setPropFunc(AddSign, "AddSign")
         .setPropFunc(AddSignCall, "AddSignCall")
         .setConstructor(constructor)

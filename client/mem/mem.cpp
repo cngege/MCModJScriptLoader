@@ -1,4 +1,4 @@
-#include "mem.h"
+﻿#include "mem.h"
 
 #include <Windows.h>	//GetModuleHandleA
 #include <vector>
@@ -12,12 +12,17 @@
 #define GET_BITS( x )  (INRANGE((x&(~0x20)),'A','F') ? ((x&(~0x20)) - 'A' + 0xa) : (INRANGE(x,'0','9') ? x - '0' : 0))
 
 static std::unordered_map<std::string, uintptr_t> signmap{};
+static std::unordered_map<std::string, std::vector<uintptr_t>> signmap2{};
 
 auto Mem::findSig(const char* signature, const char* modulename) -> uintptr_t
 {
 	auto sign_it = signmap.find(std::string(signature));
 	if(sign_it != signmap.end()) {
 		return sign_it->second;
+	}
+	auto sign_it2 = signmap2.find(std::string(signature));
+	if(sign_it2 != signmap2.end() && sign_it2->second.size() > 0) {
+		return sign_it2->second.at(0);
 	}
 
 	static auto pattern_to_byte = [](const char* pattern) {
@@ -62,6 +67,64 @@ auto Mem::findSig(const char* signature, const char* modulename) -> uintptr_t
 		return 0;
 
 	signmap[std::string(signature)] = ret;
+	return ret;
+}
+
+auto Mem::deepSearchSig(const char* signature, const char* modulename) -> std::vector<uintptr_t> {
+	auto sign_it2 = signmap2.find(std::string(signature));
+	if(sign_it2 != signmap2.end() && sign_it2->second.size()>0) {
+		return sign_it2->second;
+	}
+	std::vector<uintptr_t> ret{};
+
+	static auto pattern_to_byte = [](const char* pattern) {
+
+		auto bytes = std::vector<std::optional<uint8_t>>{};
+		auto start = const_cast<char*>(pattern);
+		auto end = const_cast<char*>(pattern) + strlen(pattern);
+		bytes.reserve(strlen(pattern) / 2);
+
+		for(auto current = start; current < end; ++current) {
+			if(*current == '?') {
+				++current;
+				if(*current == '?')
+					++current;
+				bytes.push_back(std::nullopt);
+			}
+			else bytes.push_back((uint8_t)strtoul(current, &current, 16));
+		}
+		return bytes;
+
+	};
+
+	auto gameModule = (unsigned long long)(GetModuleHandleA(modulename));
+	auto* scanBytes = reinterpret_cast<uint8_t*>(gameModule);
+	auto* const dosHeader = reinterpret_cast<PIMAGE_DOS_HEADER>(gameModule);
+	if(dosHeader == nullptr) return ret;
+	auto* const ntHeaders = reinterpret_cast<PIMAGE_NT_HEADERS>(scanBytes + dosHeader->e_lfanew);
+	const auto sizeOfCode = ntHeaders->OptionalHeader.SizeOfImage;
+
+	const auto pattern = pattern_to_byte(signature);
+	const auto end = scanBytes + sizeOfCode;
+
+	while(true) {
+		auto it = std::search(
+			scanBytes, end,
+			pattern.cbegin(), pattern.cend(),
+			[](auto byte, auto opt) {
+			return !opt.has_value() || *opt == byte;
+		});
+		if(it == end) break;
+		ret.push_back((unsigned long long)it);
+		scanBytes = it + 1;
+		if(scanBytes >= end) break;
+	}
+
+	
+	if(ret.size() == 0)
+		return ret;
+
+	signmap2[std::string(signature)] = ret;
 	return ret;
 }
 

@@ -3,6 +3,8 @@
 
 #include "imgui.h"
 #include "../client/ModManager.h"
+#include "../client/ConfigManager.h"
+
 #include "../jsClass/JSManager.h"
 #include "nlohmann/Json.hpp"
 
@@ -24,6 +26,7 @@ struct ExampleAppConsole
     bool                  AutoScroll;
     bool                  InputBox;
     bool                  PrintDebug;
+    bool                  PrintMCLog;
     bool                  ShowDemoWindow;
     bool                  ScrollToBottom;
     bool                  MainOpen=false;
@@ -44,6 +47,7 @@ struct ExampleAppConsole
         AutoScroll = true;
         InputBox = false;
         PrintDebug = true;
+        PrintMCLog = false;
         ShowDemoWindow = false;
         ScrollToBottom = false;
         SelectLogLevel = -1;
@@ -54,6 +58,12 @@ struct ExampleAppConsole
             free(History[i]);
     }
 
+    void ApplyConfig(json data) {
+        if(!data["console"].is_null()) {
+            PrintMCLog = data["console"]["PrintMCLog"].template get<bool>();
+            PrintDebug = data["console"]["PrintDebug"].template get<bool>();
+        }
+    }
 
     void ClearLog() {
         for(int i = 0; i < Items.Size; i++)
@@ -91,11 +101,11 @@ struct ExampleAppConsole
         // As a specific feature guaranteed by the library, after calling Begin() the last Item represent the title bar.
         // So e.g. IsItemHovered() will return true when hovering the title bar.
         // Here we create a context menu only available from the title bar.
-        if(ImGui::BeginPopupContextItem()) {
-            if(ImGui::MenuItem("Close Console"))
-                MainOpen = false;
-            ImGui::EndPopup();
-        }
+        //if(ImGui::BeginPopupContextItem()) {
+        //    if(ImGui::MenuItem("Close Console"))
+        //        MainOpen = false;
+        //    ImGui::EndPopup();
+        //}
 
         if(ImGui::SmallButton("清空")) { ClearLog(); }
         ImGui::SameLine();
@@ -107,15 +117,16 @@ struct ExampleAppConsole
             ImGui::Checkbox("自动滚动", &AutoScroll);
             ImGui::Checkbox("输入框", &InputBox);
             ImGui::Checkbox("打印Debug", &PrintDebug);
+            ImGui::Checkbox("打印MCLog", &PrintMCLog);
             ImGui::Checkbox("Demo窗口", &ShowDemoWindow);
             if(ImGui::Combo("设置日志等级(自动保存)", &SelectLogLevel, LogLevel.data(), static_cast<int>(LogLevel.size()))) {
                 // 保存和设置
                 spdlog::set_level((spdlog::level::level_enum)SelectLogLevel);
                 spdlog::flush_on((spdlog::level::level_enum)SelectLogLevel);  // 日志保存等级
-                nlohmann::json config = ModManager::getInstance()->readConfig();
+                nlohmann::json config = ConfigManager::getInstance()->readConfig();
                 if(config != NULL) {
                     config["log_level"] = SelectLogLevel;
-                    ModManager::getInstance()->writeConfig(config);
+                    ConfigManager::getInstance()->writeConfig(config);
                 }
             }
             ImGui::EndPopup();

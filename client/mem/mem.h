@@ -3,7 +3,7 @@
 #define CLIENT_MEM_MEM_H
 
 #include <cstdint>
-
+#include <vector>
 class Mem {
 public:
     template <typename T>
@@ -13,6 +13,7 @@ public:
     static T getValue(uintptr_t);
 
     static auto findSig(const char*, const char* modulename = "Minecraft.Windows.exe") -> uintptr_t;
+    static auto deepSearchSig(const char*, const char* modulename = "Minecraft.Windows.exe") -> std::vector<uintptr_t>;
 
     // 在地址后进行特征查找直到超出规定范围
     static auto findSigRelay(uintptr_t, const char*, size_t rang) -> uintptr_t;

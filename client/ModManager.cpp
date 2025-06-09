@@ -4,7 +4,10 @@
 #include "utils/signcode.h"
 #include <shared_mutex>
 #include <fstream>
+#include "../jsClass/JSManager.h"
 #include "imgui/imgui_uwp_wndProc.h"
+#include "quickjs/quickjs-libc.h"
+#include "imgui/appConsole.h"
 
 ModManager* ModManager::getInstance() {
     static ModManager instance{};
@@ -125,7 +128,12 @@ auto ModManager::stopSign() -> void {
     modState = true;
 }
 
+
 auto ModManager::loopback() const -> void {
+    bool IsjsLoop = true;
+    auto rt = JSManager::getInstance()->getrt();
+    auto ctx = JSManager::getInstance()->getctx();
+    int r = 0;
     while(!modState) {
         {
             std::unique_lock<std::shared_mutex> lock(rw_mtx_eventList);
@@ -140,7 +148,25 @@ auto ModManager::loopback() const -> void {
                 }
             }
         }
-        Sleep(100);
+        if(IsjsLoop) {
+            //if(JSManager::getInstance()->runstdLoop()) {
+            //   IsjsLoop = false;
+            //}
+            r = JS_ExecutePendingJob(rt, &ctx);
+            if(r < 0) {
+                int err = JS_HasException(ctx);
+                if(err) {
+                    spdlog::error("std_loop ctx error: {}", JSManager::getInstance()->getErrorStack().c_str());
+                    IsjsLoop = false;
+                }
+            }
+        }
+        if(r <= 0 || IsjsLoop == false) {
+            Sleep(100);
+        }
+        else {
+            Sleep(1);
+        }
     }
 }
 
@@ -160,21 +186,25 @@ auto ModManager::disableMod(uintptr_t modhandle) -> void {
     unregisterCoreWindowEventHandle();
 }
 
-auto ModManager::readConfig() -> nlohmann::json {
-    std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in);
-    if(!configFileR.is_open()) return NULL;
-    nlohmann::json config = {};
-    configFileR >> config;
-    configFileR.close();
-    return config;
-}
+//auto ModManager::readConfig() -> nlohmann::json {
+//    std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in);
+//    if(!configFileR.is_open()) return NULL;
+//    nlohmann::json config = {};
+//    configFileR >> config;
+//    configFileR.close();
+//    return config;
+//}
+//
+//auto ModManager::writeConfig(nlohmann::json config) -> bool {
+//    std::ofstream configFileW(ModManager::getInstance()->getOtherPath("ModConfig"));
+//    if(!configFileW.is_open()) return false;
+//    configFileW << std::setw(4) << config << std::endl;
+//    configFileW.close();
+//    return true;
+//}
 
-auto ModManager::writeConfig(nlohmann::json config) -> bool {
-    std::ofstream configFileW(ModManager::getInstance()->getOtherPath("ModConfig"));
-    if(!configFileW.is_open()) return false;
-    configFileW << std::setw(4) << config << std::endl;
-    configFileW.close();
-    return true;
+auto ModManager::getImGuiConsoleWindow() -> ExampleAppConsole* {
+    return GetImguiConsole();
 }
 
 

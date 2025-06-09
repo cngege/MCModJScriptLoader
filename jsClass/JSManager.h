@@ -42,8 +42,11 @@ public:
     auto onJsLoadBefore(const std::string, JSValue&) -> void;
     // 每个 JS脚本加载之后执行的事件
     auto onJsLoadAfter(const std::string, JSValue&) -> void;
-    // 循环跑完JS队列 - 耗时操作
-    auto runstdLoop() -> void;
+    /**
+     * @brief   耗时操作， 跑完JS队列， 使 setTimeout工作
+     * @return true 表示有错误，应该跳出循环
+     */
+    auto runstdLoop() -> bool;
 
     auto getErrorStack(JSValue) -> std::string;
     auto getErrorStack() -> std::string;

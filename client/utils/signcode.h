@@ -42,6 +42,10 @@ class SignCode {
 	 * @brief 使用特征码直接找的没有进行偏移处理的地址
 	*/
 	uintptr_t validPtr = 0;
+	/**
+	 * @brief 深度查找
+	 */
+	bool m_deepSearch = false;
 
 public:
 	using SignHandle = uintptr_t(__fastcall*)(uintptr_t);
@@ -85,6 +89,12 @@ public:
 	 * @return
 	*/
 	uintptr_t ValidPtr() const;
+
+	/**
+	 * @brief 设置深度,而不是找到一个就结束,内存不友好函数
+	 * @param enable 
+	 */
+	void setDeepSearch(bool enable = false) { m_deepSearch = enable; };
 
 	/**
 	 * @brief 传入直接定位地址的特征码

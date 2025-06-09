@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include "../client/ModManager.h"
+#include "../client/ConfigManager.h"
 #include "spdlog/spdlog.h"
 #include "eventSystem/JsModule_eventSystem.h"
 #include <unordered_map>
@@ -94,7 +95,7 @@ auto JSManager::loadModuleFromFile(const std::string& path) -> JSModuleDef* {
             return it->second;
         }
 
-        JSValue val = JS_Eval(m_ctx, content.c_str(), content.size(), path.c_str(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY/* | JS_EVAL_TYPE_MASK*/);
+        JSValue val = JS_Eval(m_ctx, content.c_str(), content.size(), path.c_str(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY/* | JS_EVAL_FLAG_ASYNC 只允许在 JS_EVAL_TYPE_GLOBAL 中使用*//* | JS_EVAL_TYPE_MASK*/);
         if(JS_IsException(val)) {
             spdlog::error("JS Module Loader fail: {}", path);
             auto result_str = JS_ErrorStackCheck(m_ctx);
@@ -154,7 +155,7 @@ auto JSManager::loadModuleFromHttp(const std::string& url) -> JSModuleDef* {
             }
             std::string content = ret->body;
 
-            JSValue val = JS_Eval(m_ctx, content.c_str(), content.size(), path.c_str(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY/* | JS_EVAL_TYPE_MASK*/);
+            JSValue val = JS_Eval(m_ctx, content.c_str(), content.size(), path.c_str(), JS_EVAL_TYPE_MODULE | JS_EVAL_FLAG_COMPILE_ONLY/* | JS_EVAL_FLAG_ASYNC 只允许在 JS_EVAL_TYPE_GLOBAL 中使用*/  /* | JS_EVAL_TYPE_MASK*/);
             if(JS_IsException(val)) {
                 spdlog::error("JS Module Loader fail: {}", path);
                 auto result_str = JS_ErrorStackCheck(m_ctx);
@@ -190,7 +191,7 @@ auto JSManager::loadJSFromFoder(const std::string& folder) -> void {
                 auto gobj = JS_GetGlobalObject(m_ctx);
                 onJsLoadBefore(scriptname, gobj);
 
-                JSValue val = JS_EvalThis(m_ctx, gobj, content.c_str(), content.size(), (fs::path(folder) / entry.path().filename()).string().c_str(), JS_EVAL_TYPE_MODULE);
+                JSValue val = JS_EvalThis(m_ctx, gobj, content.c_str(), content.size(), (fs::path(folder) / entry.path().filename()).string().c_str(), JS_EVAL_TYPE_MODULE/* | JS_EVAL_FLAG_ASYNC 只允许在 JS_EVAL_TYPE_GLOBAL 中使用*/);
                 onJsLoadAfter(scriptname, gobj);
                 if(JS_IsException(val)) {
                     spdlog::error("JS Loader fail: {}", entry.path().string());
@@ -244,8 +245,21 @@ auto JSManager::onJsLoadAfter(const std::string name, JSValue& jsv) -> void {
     JS_SetPropertyStr(m_ctx, jsv, "__模块__", JS_NULL);
 }
 
-auto JSManager::runstdLoop() -> void {
-    js_std_loop(m_ctx);
+auto JSManager::runstdLoop() -> bool {
+    bool ret = false;
+    JSContext* ctx1;
+
+    int v = JS_ExecutePendingJob(JS_GetRuntime(m_ctx), &ctx1);
+    if(v < 0) {
+       int err = JS_HasException(m_ctx);
+       spdlog::error("std_loop ctx error: {}", this->getErrorStack().c_str());
+       ret = err;
+    }
+
+    //if(ret = js_std_loop(m_ctx)) {
+    //    spdlog::error("std_loop ctx error: {}", this->getErrorStack().c_str());
+    //}
+    return ret;
 }
 
 auto JSManager::getErrorStack(JSValue err) -> std::string {
@@ -278,19 +292,19 @@ auto JSManager::getErrorStack(JSValue err) -> std::string {
 }
 
 auto JSManager::getErrorStack() -> std::string {
-    return getErrorStack(JS_GetException(m_ctx));
+    auto jsv = JS_GetException(m_ctx);
+    auto err = getErrorStack(jsv);
+    JS_FreeValue(this->getctx(), jsv);
+    return err;
 }
 
 auto JSManager::loadConfig() -> void {
     auto g = JS_GetGlobalObject(m_ctx);
-    std::string config_str = "";
-    std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in | std::ios::out);
-    if(!configFileR.is_open()) {
-        spdlog::error("读取配置文件失败, 配置文件无法打开 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    std::string config_str = ConfigManager::getInstance()->asString();
+    if(config_str.empty()) {
+        spdlog::warn("读取配置失败, 配置为空");
     }
     else {
-        config_str = std::string(std::istreambuf_iterator<char>(configFileR), std::istreambuf_iterator<char>());
-        configFileR.close();
         JSValue JSconfig = JS_ParseJSON(m_ctx, config_str.c_str(), config_str.size(), ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
         if(JS_IsException(JSconfig)) {
             spdlog::error("读取配置文件解析JSON时出现错误 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
@@ -303,18 +317,35 @@ auto JSManager::loadConfig() -> void {
         JS_FreeValue(m_ctx, JSconfig);
     }
     JS_FreeValue(m_ctx, g);
+
+    //std::string config_str = "";
+    //std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in | std::ios::out);
+    //if(!configFileR.is_open()) {
+    //    spdlog::error("读取配置文件失败, 配置文件无法打开 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //}
+    //else {
+    //    config_str = std::string(std::istreambuf_iterator<char>(configFileR), std::istreambuf_iterator<char>());
+    //    configFileR.close();
+    //    JSValue JSconfig = JS_ParseJSON(m_ctx, config_str.c_str(), config_str.size(), ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //    if(JS_IsException(JSconfig)) {
+    //        spdlog::error("读取配置文件解析JSON时出现错误 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //    }
+    //    else {
+    //        JSValue v[] = { JSconfig };
+    //        // 广播事件
+    //        NativeBroadcastEvent("onLoad", g, 1, v);
+    //    }
+    //    JS_FreeValue(m_ctx, JSconfig);
+    //}
+    //JS_FreeValue(m_ctx, g);
 }
 auto JSManager::saveConfig() -> void {
     auto g = JS_GetGlobalObject(m_ctx);
-    std::string config_str = "";
-    std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in | std::ios::out);
-    if(!configFileR.is_open()) {
-        spdlog::error("保存失败, 配置文件无法打开 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    std::string config_str = ConfigManager::getInstance()->asString();
+    if(config_str.empty()) {
+        spdlog::warn("读取配置失败, 配置为空");
     }
     else {
-        config_str = std::string(std::istreambuf_iterator<char>(configFileR), std::istreambuf_iterator<char>());
-        configFileR.close();
-
         JSValue JSconfig = JS_ParseJSON(m_ctx, config_str.c_str(), config_str.size(), ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
         if(JS_IsException(JSconfig)) {
             spdlog::error("读取配置文件解析JSON时出现错误 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
@@ -350,6 +381,53 @@ auto JSManager::saveConfig() -> void {
         JS_FreeValue(m_ctx, JSconfig);
     }
     JS_FreeValue(m_ctx, g);
+
+
+
+    //std::string config_str = "";
+    //std::ifstream configFileR(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::in | std::ios::out);
+    //if(!configFileR.is_open()) {
+    //    spdlog::error("保存失败, 配置文件无法打开 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //}
+    //else {
+    //    config_str = std::string(std::istreambuf_iterator<char>(configFileR), std::istreambuf_iterator<char>());
+    //    configFileR.close();
+
+    //    JSValue JSconfig = JS_ParseJSON(m_ctx, config_str.c_str(), config_str.size(), ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //    if(JS_IsException(JSconfig)) {
+    //        spdlog::error("读取配置文件解析JSON时出现错误 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //    }
+    //    else {
+    //        JSValue v[] = { JSconfig };
+    //        // 广播事件
+    //        NativeBroadcastEvent("onSave", g, 1, v);
+    //        // 重新写回
+    //        JSValue json_str = JS_JSONStringify(m_ctx, JSconfig, JS_NULL, JS_NewInt32(m_ctx, 2));
+    //        if(JS_IsException(json_str)) {
+    //            spdlog::error("将脚本中的配置信息重新序列化为字符串的时候出错 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //        }
+    //        else {
+    //            auto newString = JSTool::toString(json_str);
+    //            if(!newString) {
+    //                spdlog::error("将脚本中的配置信息重新序列化为字符串的时候出错 .2 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //            }
+    //            else {
+    //                std::ofstream configFileW(ModManager::getInstance()->getOtherPath("ModConfig"), std::ios::out | std::ios::trunc);
+    //                if(!configFileW.is_open()) {
+    //                    spdlog::error("在打开配置文件(准备写入)时失败 in: {}, Line: {} file: {}", __FUNCDNAME__, __LINE__, ModManager::getInstance()->getOtherPath("ModConfig").string().c_str());
+    //                }
+    //                else {
+    //                    configFileW.write(newString->c_str(), newString->size());
+    //                    configFileW.close();
+    //                    spdlog::info("配置保存成功, 写入 {} 字节", newString->size());
+    //                }
+    //            }
+    //        }
+    //        JS_FreeValue(m_ctx, json_str);
+    //    }
+    //    JS_FreeValue(m_ctx, JSconfig);
+    //}
+    //JS_FreeValue(m_ctx, g);
 }
 
 

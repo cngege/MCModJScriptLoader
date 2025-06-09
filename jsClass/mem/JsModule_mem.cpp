@@ -23,6 +23,29 @@ static JSValue js_findSig(JSContext* ctx, JSValueConst this_val, int argc, JSVal
     return JS_ThrowTypeError(ctx, "函数最少需要1个参数，当前参数个数：%d", argc);
 }
 
+static JSValue js_deepSearchSig(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
+    std::string module = "Minecraft.Windows.exe";
+    std::string signCode = "";
+    if(argc >= 1) {
+        if(argc >= 2) {
+            auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[1]));
+            module = std::string(str);
+            JS_FreeCString(ctx, str);
+        }
+        auto str = JS_ToCString(ctx, JS_ToString(ctx, argv[0]));
+        auto ptrs = Mem::deepSearchSig(str, module.c_str());
+        JS_FreeCString(ctx, str);
+
+        auto jsarr = JS_NewArray(ctx);
+        for(size_t i = 0; i < ptrs.size(); i++) {
+            JS_SetPropertyInt64(ctx, jsarr, i, JS_NewInt64(ctx, ptrs.at(i)));
+        }
+        return jsarr;
+        //return JS_NewBigInt64(ctx, ptr);
+    }
+    return JS_ThrowTypeError(ctx, "函数最少需要1个参数，当前参数个数：%d", argc);
+}
+
 static JSValue js_findSigRelay(JSContext* ctx, JSValueConst this_val, int argc, JSValueConst* argv) {
     if(argc < 3) {
         return JS_ThrowTypeError(ctx, "函数最少需要3个参数，当前参数个数：%d", argc);
@@ -166,6 +189,7 @@ static JSValue 释放CPP字符串(JSContext* ctx, JSValueConst this_val, int arg
 
 static const JSCFunctionListEntry js_mem_funcs[] = {
     JS_CFUNC_DEF("查找特征码", 1, js_findSig),
+    JS_CFUNC_DEF("深度查找特征码", 1, js_deepSearchSig),
     JS_CFUNC_DEF("二次查找特征码", 1, js_findSigRelay),
     JS_CFUNC_DEF("获取基址", 0, js_getBase),
     JS_CFUNC_DEF("设置内存Bool值", 2, js_setBoolValue),
