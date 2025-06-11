@@ -772,9 +772,6 @@ std::optional<std::vector<std::pair<std::string, std::string>>> JSTool::getObjKV
 
         // 存入结果
         if(!key.empty()) {
-            // 转为小写
-            std::transform(key.begin(), key.end(), key.begin(),
-                           [](unsigned char c) { return std::tolower(c); });
             allItem.push_back({ key , *value });
         }
     }

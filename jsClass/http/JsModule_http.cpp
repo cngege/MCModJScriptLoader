@@ -65,10 +65,30 @@ static JSValue js_http_get_request(JSContext * ctx, JSValueConst this_val, int a
 
     JSValue headersJSV = JS_NewObject(ctx);
     for(const auto& item : res->headers) {
-        JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), JSTool::fromString(item.second));
+        std::string str = item.first;
+        std::transform(str.begin(), str.end(), str.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        if(str == "set-cookie") {
+            auto v = JS_GetPropertyStr(ctx, headersJSV, item.first.c_str());
+            if(JS_IsUndefined(v)) {
+                auto arr = JS_NewArray(ctx);
+                JS_SetPropertyInt64(ctx, arr, 0, JSTool::fromString(item.second));
+                JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), arr);
+            }
+            else {
+                auto jsLeng = JS_GetPropertyStr(ctx, v, "length");
+                auto length = JSTool::toInt64(jsLeng);
+                JS_FreeValue(ctx, jsLeng);
+                if(length) {
+                    JS_SetPropertyInt64(ctx, v, *length, JSTool::fromString(item.second));
+                }
+            }
+        }
+        else {
+            JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), JSTool::fromString(item.second));
+        }
     }
     JS_SetPropertyStr(ctx, retJSV, "headers", headersJSV);
-
     return retJSV;
 }
 
@@ -125,7 +145,28 @@ static JSValue js_http_post_request(JSContext* ctx, JSValueConst this_val, int a
 
     JSValue headersJSV = JS_NewObject(ctx);
     for(const auto& item : res->headers) {
-        JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), JSTool::fromString(item.second));
+        std::string str = item.first;
+        std::transform(str.begin(), str.end(), str.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        if(str == "set-cookie") {
+            auto v = JS_GetPropertyStr(ctx, headersJSV, item.first.c_str());
+            if(JS_IsUndefined(v)) {
+                auto arr = JS_NewArray(ctx);
+                JS_SetPropertyInt64(ctx, arr, 0, JSTool::fromString(item.second));
+                JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), arr);
+            }
+            else {
+                auto jsLeng = JS_GetPropertyStr(ctx, v, "length");
+                auto length = JSTool::toInt64(jsLeng);
+                JS_FreeValue(ctx, jsLeng);
+                if(length) {
+                    JS_SetPropertyInt64(ctx, v, *length, JSTool::fromString(item.second));
+                }
+            }
+        }
+        else {
+            JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), JSTool::fromString(item.second));
+        }
     }
     JS_SetPropertyStr(ctx, retJSV, "headers", headersJSV);
 
@@ -251,14 +292,25 @@ static JSValue js_http_ajax_request(JSContext* ctx, JSValueConst this_val, int a
             }
         };
     }
+    
     httplib::Result res;
     if(method == "Post") {
         std::string content_type = "application/json";
-        auto it = Clientheaders.find(std::string("content-type"));
+
+        //auto it = Clientheaders.find(std::string("content-type"));
+        //if(it != Clientheaders.end()) {
+        //    content_type = it->second;
+        //}
+        auto it = std::find_if(Clientheaders.begin(), Clientheaders.end(), [&](const auto& s) {
+            std::string tmpss = s.first;
+            // 转为小写
+            std::transform(tmpss.begin(), tmpss.end(), tmpss.begin(),
+                           [](unsigned char c) { return std::tolower(c); });
+            return (tmpss == "content-type");
+        });
         if(it != Clientheaders.end()) {
             content_type = it->second;
         }
-        
         res = https.Post(weibu, Clientheaders, body, content_type, downloadcall);
     }
     else {
@@ -302,7 +354,28 @@ static JSValue js_http_ajax_request(JSContext* ctx, JSValueConst this_val, int a
 
     JSValue headersJSV = JS_NewObject(ctx);
     for(const auto& item : res->headers) {
-        JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), JSTool::fromString(item.second));
+        std::string str = item.first;
+        std::transform(str.begin(), str.end(), str.begin(),
+                       [](unsigned char c) { return std::tolower(c); });
+        if(str == "set-cookie") {
+            auto v = JS_GetPropertyStr(ctx, headersJSV, item.first.c_str());
+            if(JS_IsUndefined(v)) {
+                auto arr = JS_NewArray(ctx);
+                JS_SetPropertyInt64(ctx, arr, 0, JSTool::fromString(item.second));
+                JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), arr);
+            }
+            else {
+                auto jsLeng = JS_GetPropertyStr(ctx, v, "length");
+                auto length = JSTool::toInt64(jsLeng);
+                JS_FreeValue(ctx, jsLeng);
+                if(length) {
+                    JS_SetPropertyInt64(ctx, v, *length, JSTool::fromString(item.second));
+                }
+            }
+        }
+        else {
+            JS_SetPropertyStr(ctx, headersJSV, item.first.c_str(), JSTool::fromString(item.second));
+        }
     }
     JS_SetPropertyStr(ctx, retJSV, "headers", headersJSV);
 
