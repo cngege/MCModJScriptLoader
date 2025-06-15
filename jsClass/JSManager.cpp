@@ -12,7 +12,39 @@
 
 #define CPPHTTPLIB_OPENSSL_SUPPORT
 #include "http/httplib.h"
+
 #include <regex>
+#include <chrono>
+#include <map>
+#include <mutex>
+#include <queue>
+
+
+
+struct TaskQueuesStruct
+{
+    /**
+     * @brief 要执行的JS的回调函数
+     */
+    JSValue call;
+    /**
+     * @brief 0 setTimeout, 1: setInterval
+     */
+    std::byte type;
+    /**
+     * @brief 延迟的时间或者循环的间隔
+     */
+    int64_t time;
+    /**
+     * @brief 当前时间的64位整数表示。添加时候的时间以及记录的时间
+     */
+    int64_t curr_t;
+};
+
+static std::map<int64_t, TaskQueuesStruct> TaskQueues = {};
+static std::recursive_mutex taskQueueMtx;
+static std::priority_queue<int64_t, std::vector<int64_t>, std::greater<int64_t>> freeKeys; // 小顶堆
+static int64_t nextKey = 1; // 下一个新键
 
 static std::string JS_ErrorStackCheck(JSContext* ctx) {
     JSValue err = JS_GetException(ctx);
@@ -465,6 +497,118 @@ auto JSManager::initJSManager()->void {
 //void unregisterCoreWindowEventHandle();
 auto JSManager::disableJSManager() -> void {
 
+}
+
+
+auto JSManager::runTaskQueue() -> bool {
+    // 线程锁
+    std::lock_guard<std::recursive_mutex> lock(taskQueueMtx);
+
+    // 获取当前时间点（兼容 Windows/Linux/macOS）
+    auto now = std::chrono::system_clock::now();
+    // 转换为毫秒级时间戳
+    auto ms_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch()
+    ).count();
+
+    for(auto it = TaskQueues.begin(); it != TaskQueues.end(); ) {
+        if(it->second.curr_t + it->second.time < ms_since_epoch) {
+            try {
+                JSValue ret = JS_Call(m_ctx, it->second.call, JS_NULL, 0, {});
+                if(JS_IsException(ret)) {
+                    spdlog::error(this->getErrorStack(ret));
+                }
+                JS_FreeValue(m_ctx, ret);
+            }
+            catch(std::exception& e) {
+                spdlog::error("执行任务队列回调时出现异常 {}, {}, {}", e.what(), __FILE__, __LINE__);
+            }
+            if(it->second.type == std::byte(0)) {
+                JS_FreeValue(m_ctx, it->second.call);
+                freeKeys.push(it->first);
+                it = TaskQueues.erase(it); // C++11 起 erase 返回下一迭代器
+            }
+            else { // == 1
+                it->second.curr_t = ms_since_epoch;
+                ++it;
+            }
+        }
+        else {
+            //it->second.curr_t = ms_since_epoch;
+            ++it;
+        }
+    }
+
+    return TaskQueues.size() > 0;
+}
+
+auto JSManager::addTimeOut(JSValue jsv, int64_t t) -> int64_t {
+    // 线程锁
+    std::lock_guard<std::recursive_mutex> lock(taskQueueMtx);
+
+    // 获取当前时间点（兼容 Windows/Linux/macOS）
+    auto now = std::chrono::system_clock::now();
+    // 转换为毫秒级时间戳
+    auto ms_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch()
+    ).count();
+
+    int64_t key = 0;
+    if(!freeKeys.empty()) {
+        key = freeKeys.top();
+        freeKeys.pop();
+    }
+    else {
+        key = nextKey++; // 分配新键
+    }
+    TaskQueues[key] = {
+        JS_DupValue(m_ctx, jsv),
+        std::byte(0),
+        t,
+        ms_since_epoch
+    };
+
+    return key;
+}
+
+auto JSManager::addInterval(JSValue jsv, int64_t t) -> int64_t {
+    // 线程锁
+    std::lock_guard<std::recursive_mutex> lock(taskQueueMtx);
+
+    // 获取当前时间点（兼容 Windows/Linux/macOS）
+    auto now = std::chrono::system_clock::now();
+    // 转换为毫秒级时间戳
+    auto ms_since_epoch = std::chrono::duration_cast<std::chrono::milliseconds>(
+        now.time_since_epoch()
+    ).count();
+
+    int64_t key = 0;
+    if(!freeKeys.empty()) {
+        key = freeKeys.top();
+        freeKeys.pop();
+    }
+    else {
+        key = nextKey++; // 分配新键
+    }
+    TaskQueues[key] = {
+        JS_DupValue(m_ctx, jsv),
+        std::byte(1),
+        t,
+        ms_since_epoch
+    };
+
+    return key;
+}
+
+auto JSManager::removeTask(int64_t id) -> void {
+    // 线程锁
+    std::lock_guard<std::recursive_mutex> lock(taskQueueMtx);
+    auto it = TaskQueues.find(id);
+    if(it != TaskQueues.end()) {
+        JS_FreeValue(m_ctx, it->second.call);
+        TaskQueues.erase(it); // 按迭代器删除
+        freeKeys.push(id);
+    }
 }
 
 
@@ -1173,6 +1317,21 @@ JSTool::Param& JSTool::Param::Parse(bool need) {
     if(m_index >= m_argc && need) { // 不够
         m_hasErr = true;
         m_JSErr = std::format("仅有{}个参数是不够的，正在尝试读取第{}个参数", m_argc, m_index + 1);
+    }
+    m_index++;
+    return *this;
+}
+
+JSTool::Param& JSTool::Param::ParseCall(bool need) {
+    if(m_index >= m_argc && need) { // 不够
+        m_hasErr = true;
+        m_JSErr = std::format("仅有{}个参数是不够的，正在尝试读取第{}个参数", m_argc, m_index + 1);
+    }
+    else if(m_index < m_argc) {
+        if(!JS_IsFunction(JSManager::getInstance()->getctx(), m_argv[m_index])) {
+            m_hasErr = true;
+            m_JSErr = std::format("第{}个参数不是回调函数,错误",m_index + 1);
+        }
     }
     m_index++;
     return *this;

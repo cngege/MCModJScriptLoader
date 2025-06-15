@@ -135,38 +135,48 @@ auto ModManager::loopback() const -> void {
     auto ctx = JSManager::getInstance()->getctx();
     int r = 0;
     while(!modState) {
-        {
-            std::unique_lock<std::shared_mutex> lock(rw_mtx_eventList);
-            if(eventlist.size()) {
-                try {
-                    auto it = eventlist.begin();
-                    (*it)();
-                    eventlist.erase(it);
-                }
-                catch(std::exception& err) {
-                    spdlog::error("在事件列表中运行读取的一个事件时出错:{}", err.what());
-                }
-            }
-        }
-        if(IsjsLoop) {
-            //if(JSManager::getInstance()->runstdLoop()) {
-            //   IsjsLoop = false;
-            //}
-            r = JS_ExecutePendingJob(rt, &ctx);
-            if(r < 0) {
-                int err = JS_HasException(ctx);
-                if(err) {
-                    spdlog::error("std_loop ctx error: {}", JSManager::getInstance()->getErrorStack().c_str());
-                    IsjsLoop = false;
+        try {
+            {
+                std::unique_lock<std::shared_mutex> lock(rw_mtx_eventList);
+                if(eventlist.size()) {
+                    try {
+                        auto it = eventlist.begin();
+                        (*it)();
+                        eventlist.erase(it);
+                    }
+                    catch(std::exception& err) {
+                        spdlog::error("在事件列表中运行读取的一个事件时出错:{}", err.what());
+                    }
                 }
             }
+            if(IsjsLoop) {
+                //if(JSManager::getInstance()->runstdLoop()) {
+                //   IsjsLoop = false;
+                //}
+                r = JS_ExecutePendingJob(rt, &ctx);
+                if(r < 0) {
+                    int err = JS_HasException(ctx);
+                    if(err) {
+                        spdlog::error("std_loop ctx error: {}", JSManager::getInstance()->getErrorStack().c_str());
+                        IsjsLoop = false;
+                    }
+                }
+            }
+            auto r2 = JSManager::getInstance()->runTaskQueue();
+            if((r <= 0 || IsjsLoop == false) && !r2) {
+                Sleep(100);
+            }
+            else {
+                Sleep(1);
+            }
         }
-        if(r <= 0 || IsjsLoop == false) {
-            Sleep(100);
+        catch(std::exception& e) {
+            spdlog::error("{} 中发生异常: {}", __FUNCTION__, e.what());
         }
-        else {
-            Sleep(1);
+        catch(...) {
+            spdlog::error("{} 中发生未知异常", __FUNCTION__);
         }
+
     }
 }
 

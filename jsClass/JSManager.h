@@ -61,6 +61,12 @@ public:
     auto initJSManager()->void;
     auto disableJSManager() -> void;
 
+    // setTimeOut
+    auto runTaskQueue() -> bool;
+    auto addTimeOut(JSValue jsv, int64_t t)->int64_t;
+    auto addInterval(JSValue jsv, int64_t t) -> int64_t;
+    auto removeTask(int64_t id) -> void;
+
 private:
     JSContext* m_ctx = nullptr;
     JSRuntime* m_rt = nullptr;
@@ -302,6 +308,7 @@ public:
         Param& Parse(std::optional<T>& ref);
 
         Param& Parse(bool need = true);
+        Param& ParseCall(bool need = true);
 
         //template<typename T>
         //Param& ParseCall(std::function<T(T)>& refcall);
