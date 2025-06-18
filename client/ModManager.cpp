@@ -134,20 +134,37 @@ auto ModManager::loopback() const -> void {
     auto rt = JSManager::getInstance()->getrt();
     auto ctx = JSManager::getInstance()->getctx();
     int r = 0;
+    int exception_count = 0;
     while(!modState) {
+        if(exception_count > 100) {
+            spdlog::warn("主循环中捕获到大量异常, 已跳出主循环");
+            break;
+        }
         try {
             {
                 std::unique_lock<std::shared_mutex> lock(rw_mtx_eventList);
-                if(eventlist.size()) {
-                    try {
-                        auto it = eventlist.begin();
+
+                try {
+                    auto it = eventlist.begin();
+                    while(it!=eventlist.end()) {
                         (*it)();
-                        eventlist.erase(it);
-                    }
-                    catch(std::exception& err) {
-                        spdlog::error("在事件列表中运行读取的一个事件时出错:{}", err.what());
+                        it = eventlist.erase(it);
                     }
                 }
+                catch(std::exception& err) {
+                    spdlog::error("在事件列表中运行读取的一个事件时出错:{}", err.what());
+                }
+
+                //if(eventlist.size()) {
+                //    try {
+                //        auto it = eventlist.begin();
+                //        (*it)();
+                //        eventlist.erase(it);
+                //    }
+                //    catch(std::exception& err) {
+                //        spdlog::error("在事件列表中运行读取的一个事件时出错:{}", err.what());
+                //    }
+                //}
             }
             if(IsjsLoop) {
                 //if(JSManager::getInstance()->runstdLoop()) {
@@ -172,9 +189,11 @@ auto ModManager::loopback() const -> void {
         }
         catch(std::exception& e) {
             spdlog::error("{} 中发生异常: {}", __FUNCTION__, e.what());
+            exception_count++;
         }
         catch(...) {
             spdlog::error("{} 中发生未知异常", __FUNCTION__);
+            exception_count++;
         }
 
     }
